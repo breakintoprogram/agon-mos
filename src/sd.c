@@ -3,14 +3,16 @@
  * Author:			RJH
  * Modified by:		Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	19/06/2022
+ * Last Updated:	11/07/2022
  * 
  * Code taken from this article: http://www.rjhcoding.com/avrc-sd-interface-1.php
  *
  * Modinfo:
+ * 11/07/2022:		Now includes defines.h
  */
 
 #include <eZ80.h>
+#include <defines.h>
 
 #include <stdio.h>
 #include <String.h>
