@@ -16,6 +16,7 @@
 <file filter-key="">src_startup\init_params_f92.asm</file>
 <file filter-key="">src_startup\vectors16.asm</file>
 <file filter-key="">src\mos.c</file>
+<file filter-key="">src\serial.asm</file>
 </files>
 
 <!-- configuration information -->
