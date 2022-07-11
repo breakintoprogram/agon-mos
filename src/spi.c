@@ -3,14 +3,16 @@
  * Author:			Cocoacrumbs
  * Modified by:		Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	19/06/2022
+ * Last Updated:	11/07/2022
  * 
  * Thank you to @CoCoaCrumbs fo this code https://www.cocoacrumbs.com/
  *
  * Modinfo:
+ * 11/07/2022:		Now includes defines.h; init_hw renamed to init_spi
  */
 
 #include <ez80.h>
+#include <defines.h>
 
 #include "spi.h"
 #include "timer.h"
@@ -58,7 +60,7 @@ BYTE spi_transfer(BYTE d) {
 
 
 // Reset system devices
-void init_hw() {
+void init_spi() {
     long i;
 
     // SS must remain high for SPI to work properly 
