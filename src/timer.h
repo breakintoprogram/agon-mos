@@ -8,17 +8,13 @@
  * Thank you to @CoCoaCrumbs fo this code https://www.cocoacrumbs.com/
  *
  * Modinfo:
+ * 11/07/2022:		Removed unused functions
  */
 
 #ifndef TIMER_H
 #define TIMER_H
 
-void timer2_init(int interval);
+void init_timer2(int interval);
 void delayms(int ms);
-
-long millis(void);
-
-void tenMicroSeconds(void);
-void sixtyMicroSeconds(void);
 
 #endif TIMER_H
