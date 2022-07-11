@@ -3,13 +3,14 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	10/07/2022
+; Last Updated:	11/07/2022
 ;
 ; Modinfo:
-;
+; 11/07/2022:	Added RST_10 code - TX
+
 		XREF __init
 		XREF __low_rom
-
+		
 		XDEF _reset
 		XDEF __default_nmi_handler
 		XDEF __default_mi_handler
@@ -22,69 +23,58 @@
 		XDEF __1st_jump_table
 		XDEF __vector_table
 
+		XREF serial_TX
 
-NVECTORS 	EQU 48                ; number of interrupt vectors
+NVECTORS 	EQU 48			; Number of interrupt vectors
 
 ; Save Interrupt State
 ;
 SAVEIMASK	MACRO
-		ld a, i               ; sets parity bit to value of IEF2
-		push af
-		di                    ; disable interrupts while loading table 
+		LD	A, I		; Sets parity bit to value of IEF2
+		PUSH	AF
+		DI			; Disable interrupts while loading table 
 		MACEND
 
 ; Restore Interrupt State
 ;
 RESTOREIMASK	MACRO
-		pop af
-		jp po, $+5            ; parity bit is IEF2
-		ei
+		POP	AF
+		JP	PO, $+5		; Parity bit is IEF2
+		EI
 		MACEND
 
 ; Reset and all RST nn's
-;  1. diaable interrupts
-;  2. clear mixed memory mode (MADL) flag
-;  3. jump to initialization procedure with jp.lil to set ADL
 ;
 		DEFINE .RESET, SPACE = ROM
 		SEGMENT .RESET
 
 _reset:	
-_rst0:		di
-		rsmix
-		jp.lil __init
+_rst0:		DI
+		RSMIX
+		JP.LIL	__init
 		
-_rst8:		di
-		rsmix
-		jp.lil __init
+_rst8:		RET
+		DS	7
 		
-_rst10:		di
-		rsmix
-		jp.lil __init
+_rst10:		JP	serial_TX
+		DS	5
 
-_rst18:		di
-		rsmix
-		jp.lil __init
+_rst18:		RET
+		DS	7
 		
-_rst20:		di
-		rsmix
-		jp.lil __init
+_rst20:		RET
+		DS	7
 		
-_rst28:		di
-		rsmix
-		jp.lil __init
+_rst28:		RET
+		DS	7
 
-_rst30:		di
-		rsmix
-		jp.lil __init
+_rst30:		RET
+		DS	7
 
-_rst38:		di
-		rsmix
-		jp.lil __init
+_rst38:		RET
+		DS 	%2D
 		
-		ds %26
-		
-_nmi:		jp.lil __default_nmi_handler
+_nmi:		JP.LIL	__default_nmi_handler
 
 ; Startup code
 		DEFINE .STARTUP, SPACE = ROM
@@ -99,12 +89,12 @@ __nvectors:
 ; Default Non-Maskable Interrupt handler
 ;
 __default_nmi_handler:
-		retn
+		RETN
 
 ; Default Maskable Interrupt handler
 __default_mi_handler:
-		ei
-		reti
+		EI
+		RETI
 
 ; Initialize all potential interrupt vector locations with a known
 ; default handler.
