@@ -35,15 +35,7 @@ void wait_ESP32(void) {
 
 int main(void) {
 	UART 	pUART;
-/*
-	DIR	  	dir;
-	FRESULT	fr;
-	static 	FILINFO  fno;
-	FIL	   	fil;
-	BYTE   	buffer;
-	UINT   	br;	
-	INT 	ch;
-*/
+
 	pUART.baudRate = 384000;
 	pUART.dataBits = 8;
 	pUART.stopBits = 1;
@@ -64,42 +56,6 @@ int main(void) {
 		mos_input(&cmd, sizeof(cmd));
 		mos_exec(&cmd, sizeof(cmd));
 	}
-/*
-	f_mount(&fs, "", 1);
-	
-	fr = f_opendir(&dir, "/");
-	if(fr == FR_OK) {
-		for(;;) {
-			fr = f_readdir(&dir, &fno);
-			if (fr != FR_OK || fno.fname[0] == 0) {
-				break;  // Break on error or end of dir
-			}
-			printf("%s\n\r", fno.fname);
-		}
-	}
-	f_closedir(&dir);
-	
-	fr = f_open(&fil, "test1.txt", FA_READ);
-	if(fr == FR_OK) {
-		for(;;) {
-			fr = f_read(&fil, &buffer, 1, &br);
-			if(br == 0) {
-				break;
-			}
-			putch(buffer);
-		}
-		printf("\n\r");
-	}
-	f_close(&fil);
-	
-	f_unmount("");
-	
-	while(1) {
-		ch = getch();
-		if(ch > 0) {
-			printf("The key %c %d was pressed\n\r", ch, ch);
-		}
-	}
-*/
+
 	return 0;
 }
