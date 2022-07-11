@@ -14,4 +14,4 @@ The MOS will provide a command line, similar to CP/M or DOS, that will provide a
 
 ### Licenses
 
-The SD filing system is implemented using [FatFS by ChaN](http://elm-chan.org/fsw/ff/00index_e.html). The license for this can be found in [src/LICENSE](src/LICENSE)
+The SD filing system is implemented using [FatFS by ChaN](http://elm-chan.org/fsw/ff/00index_e.html). The license for this can be found in [src_fatfs/LICENSE](src_fatfs/LICENSE) along with the accompanying code.
