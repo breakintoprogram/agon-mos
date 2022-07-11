@@ -2,58 +2,71 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	19/06/2022
+ * Last Updated:	11/07/2022
  *
  * Modinfo:
+ * 11/07/2022:		Tweaks for Agon Light, Command Line code added
  */
 
 #include <eZ80.h>
-
+#include <defines.h>
 #include <stdio.h>
 #include <CTYPE.h>
 #include <String.h>
-#include <uart.h>
-#include <uartdefs.h>
 
+#include "uart.h"
 #include "spi.h"
-
 #include "timer.h"
-#include "platform.h"
-
 #include "ff.h"
+#include "mos.h"
 
-/* ************************************************************************ */
+#define		MOS_version		0
+#define		MOS_revision 	1
+		
+static FATFS fs;				// Handle for the file system
+static char  cmd[256];			// Array for the command line handler
 
-#define min(a, b)               (((a) < (b)) ? (a) : (b))
-#define max(a, b)               (((a) > (b)) ? (a) : (b))
-
-/* ************************************************************************ */
+void wait_ESP32(void) {
+	INT ch = 0; 	
+	while(ch != 27) {
+		ch = getch();
+	}	
+}
 
 int main(void) {
-	FATFS fs;   
-	DIR	  dir;
-	FRESULT fr;
-	static FILINFO  fno;
-	FIL	   fil;
-	BYTE   buffer;
-	UINT   br;
-
-	UART pUART;
-
-	pUART.uartMode = POLL;
-	pUART.baudRate = 250000;
+	UART 	pUART;
+/*
+	DIR	  	dir;
+	FRESULT	fr;
+	static 	FILINFO  fno;
+	FIL	   	fil;
+	BYTE   	buffer;
+	UINT   	br;	
+	INT 	ch;
+*/
+	pUART.baudRate = 384000;
 	pUART.dataBits = 8;
 	pUART.stopBits = 1;
 	pUART.parity = PAR_NOPARITY;
-	pUART.fifoTriggerLevel = FIFO_TRGLVL_NONE;
- 	pUART.hwFlowControl = ENABLE_HWFLOW_CONTROL;
-	pUART.swFlowControl = DISABLE_SWFLOW_CONTROL;
-
-    timer2_init(1);             // Set to 1 ms interval
-    init_hw();
-	open_UART0(&pUART);	
-
+	
+	init_timer2(1);			// Initialise Timer 2 @ 1ms interval
+	init_spi();				// Initialise SPI comms for the SD card interface
+	init_UART0();			// Initialise UART0 for the ESP32 interface
+	EI();					// Enable the eZ80 interrupts
+	open_UART0(&pUART);		// Open the UART 
+	f_mount(&fs, "", 1);	// Mount the SD card
+	
+	wait_ESP32();			// Wait for the ESP32 to finish its bootup
+	
+	printf("AGON MOS Version %d.%02d\n\r\n\r", MOS_version, MOS_revision);
+	
+	while(1) {
+		mos_input(&cmd, sizeof(cmd));
+		mos_exec(&cmd, sizeof(cmd));
+	}
+/*
 	f_mount(&fs, "", 1);
+	
 	fr = f_opendir(&dir, "/");
 	if(fr == FR_OK) {
 		for(;;) {
@@ -61,7 +74,7 @@ int main(void) {
 			if (fr != FR_OK || fno.fname[0] == 0) {
 				break;  // Break on error or end of dir
 			}
-			printf("%s\n", fno.fname);
+			printf("%s\n\r", fno.fname);
 		}
 	}
 	f_closedir(&dir);
@@ -75,11 +88,18 @@ int main(void) {
 			}
 			putch(buffer);
 		}
-		printf("\n");
+		printf("\n\r");
 	}
 	f_close(&fil);
 	
 	f_unmount("");
-
+	
+	while(1) {
+		ch = getch();
+		if(ch > 0) {
+			printf("The key %c %d was pressed\n\r", ch, ch);
+		}
+	}
+*/
 	return 0;
-} /* end main */
+}
