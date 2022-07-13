@@ -10,8 +10,36 @@ https://www.thebyteattic.com/p/agon.html
 
 ### What is a MOS
 
-The MOS will provide a command line, similar to CP/M or DOS, that will provide a human interface to the Agon file system. It will also provide an API for BBC Basic for Z80 and other applications for file I/O.
+The MOS is a command line machine operating system, similar to CP/M or DOS, that provides a human interface to the Agon file system.
+
+It also provides an API for file I/O and other common operations for BBC Basic for Z80 and other third-party applications.
+
+### MOS Commands
+
+* `CAT`: Directory listing of the current directory. Aliases include `DIR` and `.`
+* `LOAD filename addr`: Load a file from the SD card to the specified address
+* `SAVE filename addr size`: Save a block of memory to the SD card
+* `DEL filename`: Delete a file
+* `JMP addr`: Jump to the specified address in memory
+
+NB:
+
+1. Commands are case sensitive and all parameters are space delimited.
+2. Numbers are in decimal and can be prefixed by '&' for hexadecimal.
+3. Addresses are 24-bit:
+	- &000000 to &01FFFF: ROM
+	- &020000 to &09FFFF: RAM
+
+### Build
+
+The eZ80 is programmed via the ZDI connector on the left-hand side of the board. This requires a Zilog USB Smart Cable (part number ZUSBSC00100ZACG) that can be purchased from online stockists such as Mouser or RS Components. Note that at time of writing (July 2022) there are lead times for this cable.
+
+In addition to the cable, you will need to download the free ZDS II tools ([product ID SD00063](https://zilog.com/index.php?option=com_zcm&task=view&soft_id=38&Itemid=74)). Note that this is only available for Windows.
+
+Any custom settings for Agon development is contained within the project files, so no further configuration will need to be done.
 
 ### Licenses
 
-The SD filing system is implemented using [FatFS by ChaN](http://elm-chan.org/fsw/ff/00index_e.html). The license for this can be found in [src_fatfs/LICENSE](src_fatfs/LICENSE) along with the accompanying code.
+This code is released under an MIT license, with the following exceptions:
+
+* FatFS: The license for the [FAT filing system by ChaN](http://elm-chan.org/fsw/ff/00index_e.html) can be found here [src_fatfs/LICENSE](src_fatfs/LICENSE) along with the accompanying code.
