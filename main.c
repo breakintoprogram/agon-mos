@@ -2,10 +2,11 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	11/07/2022
+ * Last Updated:	13/07/2022
  *
  * Modinfo:
- * 11/07/2022:		Tweaks for Agon Light, Command Line code added
+ * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
+ * 13/07/2022:		Version 0.02
  */
 
 #include <eZ80.h>
@@ -21,7 +22,7 @@
 #include "mos.h"
 
 #define		MOS_version		0
-#define		MOS_revision 	1
+#define		MOS_revision 	2
 		
 static FATFS fs;				// Handle for the file system
 static char  cmd[256];			// Array for the command line handler
