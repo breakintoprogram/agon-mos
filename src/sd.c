@@ -3,12 +3,13 @@
  * Author:			RJH
  * Modified by:		Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	11/07/2022
+ * Last Updated:	13/07/2022
  * 
  * Code taken from this article: http://www.rjhcoding.com/avrc-sd-interface-1.php
  *
  * Modinfo:
  * 11/07/2022:		Now includes defines.h
+ * 13/07/2022:		Fixed bug in SD_writeBlocks
  */
 
 #include <eZ80.h>
@@ -161,8 +162,8 @@ BYTE SD_writeBlocks(DWORD addr, BYTE *buf, WORD count) {
 	UINT	i;
 
 	for(i = 0; i < count; i++) {
-		res = SD_readSingleBlock(sector, ptr, &token);
-		if(res = 0x00 && token == SD_DATA_ACCEPTED) {
+		res = SD_writeSingleBlock(sector, ptr, &token);
+		if(res == 0x00 && token == SD_DATA_ACCEPTED) {
 			sector++;
 			ptr += SD_BLOCK_LEN;
 		}
