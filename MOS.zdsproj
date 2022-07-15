@@ -17,6 +17,7 @@
 <file filter-key="">src_startup\vectors16.asm</file>
 <file filter-key="">src\mos.c</file>
 <file filter-key="">src\serial.asm</file>
+<file filter-key="">src\gpio.asm</file>
 </files>
 
 <!-- configuration information -->
@@ -50,7 +51,7 @@
 <option name="promote" type="boolean" change-action="compile">true</option>
 <option name="reduceopt" type="boolean" change-action="compile">false</option>
 <option name="stdinc" type="string" change-action="compile"></option>
-<option name="usrinc" type="string" change-action="compile">src;src_fatfs</option>
+<option name="usrinc" type="string" change-action="compile">src;src_fatfs;src_startup</option>
 <option name="watch" type="boolean" change-action="none">false</option>
 <option name="multithread" type="boolean" change-action="compile">false</option>
 </options>

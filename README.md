@@ -21,6 +21,7 @@ It also provides an API for file I/O and other common operations for BBC Basic f
 * `SAVE filename addr size`: Save a block of memory to the SD card
 * `DEL filename`: Delete a file
 * `JMP addr`: Jump to the specified address in memory
+* `RUN addr`: Call an address in memory (switching to Z80 mode - ADL=0)
 
 NB:
 
@@ -29,6 +30,12 @@ NB:
 3. Addresses are 24-bit:
 	- &000000 to &01FFFF: ROM
 	- &020000 to &09FFFF: RAM
+4. The RUN command is incomplete - it will eventually call code in ADL mode as well. Use RET.LIS to return back to MOS 
+
+### Etiquette
+
+Please do not issue pull requests or issues for this project; it is very much a work-in-progress.
+I will review this policy once the code is approaching live status and I have time to collaborate more.
 
 ### Build
 
