@@ -2,12 +2,13 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	13/07/2022
+ * Last Updated:	14/07/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
  * 12/07/2022:		Added mos_cmdJMP
  * 13/07/2022:		Added mos_cmdSAVE, mos_cmdDEL, improved command parsing and file error reporting
+ * 14/07/2022:		Added mos_cmdRUN
  */
 
 #include <eZ80.h>
@@ -22,6 +23,10 @@
 
 #define MOS_prompt '*'
 
+extern void exec16(long addr);
+
+extern char keycode;
+
 static t_mosCommand mosCommands[] = {
 	{ ".", 		&mos_cmdDIR },
 	{ "DIR",	&mos_cmdDIR },
@@ -29,7 +34,8 @@ static t_mosCommand mosCommands[] = {
 	{ "LOAD",	&mos_cmdLOAD },
 	{ "SAVE", 	&mos_cmdSAVE },
 	{ "DEL", 	&mos_cmdDEL },
-	{ "JMP",	&mos_cmdJMP }
+	{ "JMP",	&mos_cmdJMP },
+	{ "RUN", 	&mos_cmdRUN },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -69,8 +75,8 @@ void mos_input(char * buffer, int bufferLength) {
 	putch(MOS_prompt);
 	
 	while(ch != 13) {
-		ch = getch();
-
+		ch = keycode;
+		keycode = 0;
 		if(ch > 0) {
 			if(ch >= 32 && ch <= 126) {
 				if(index < limit) {
@@ -89,7 +95,7 @@ void mos_input(char * buffer, int bufferLength) {
 						break;
 				}					
 			}
-		}
+		}		
 	}
 	buffer[index] = 0x00;
 	printf("\n\r");
@@ -295,5 +301,15 @@ int mos_cmdJMP(char *ptr) {
 	};
 	dest = (void *)addr;
 	dest();
+	return 0;
+}
+
+int mos_cmdRUN(char *ptr) {
+	long 	addr;
+	void (* dest)(void) = 0;
+	if(!mos_parseNumber(NULL, &addr)) {
+		return 1;
+	};
+	exec16(addr);
 	return 0;
 }
