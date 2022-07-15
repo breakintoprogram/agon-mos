@@ -50,3 +50,10 @@ Any custom settings for Agon development is contained within the project files, 
 This code is released under an MIT license, with the following exceptions:
 
 * FatFS: The license for the [FAT filing system by ChaN](http://elm-chan.org/fsw/ff/00index_e.html) can be found here [src_fatfs/LICENSE](src_fatfs/LICENSE) along with the accompanying code.
+
+### Links
+
+- [Zilog eZ80 User Manual](http://www.zilog.com/docs/um0077.pdf)
+- [ZiLOG Developer Studio II User Manual](http://www.zilog.com/docs/devtools/um0144.pdf)
+- [FatFS - Generic File System](http://elm-chan.org/fsw/ff/00index_e.html)
+- [AVRC Tutorials - Initialising an SD Card](http://www.rjhcoding.com/avrc-sd-interface-1.php)
