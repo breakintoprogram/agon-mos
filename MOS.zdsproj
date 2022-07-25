@@ -14,10 +14,12 @@
 <file filter-key="">src\uart.c</file>
 <file filter-key="">src_startup\cstartup.asm</file>
 <file filter-key="">src_startup\init_params_f92.asm</file>
-<file filter-key="">src_startup\vectors16.asm</file>
 <file filter-key="">src\mos.c</file>
 <file filter-key="">src\serial.asm</file>
 <file filter-key="">src\gpio.asm</file>
+<file filter-key="">src\mos_api.asm</file>
+<file filter-key="">src\misc.asm</file>
+<file filter-key="">src_startup\vectors16.asm</file>
 </files>
 
 <!-- configuration information -->
