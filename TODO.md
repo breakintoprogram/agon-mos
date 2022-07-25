@@ -1,10 +1,13 @@
 # TODO
 ### Next Jobs
 - The RUN command: modify to load file in and run either in Z80 or ADL mode
-- Add a stubbed RST 08h API handler
 ### Known Bugs / Missing Features
-- Keyboard a bit sluggish since version 0.03
+- None
 ### Fixed Bugs / New Features
+#### Version 0.04
+- Now runs in STMIX mode for mixed mode interrupt support
+- Add a RST 08h API handler
+- Fixed keyboard input issues
 #### Version 0.03
 - Added VBLANK interrupt
 - Added GPIO functions
