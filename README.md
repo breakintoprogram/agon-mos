@@ -32,6 +32,16 @@ NB:
 	- &020000 to &09FFFF: RAM
 4. The RUN command is incomplete - it will eventually call code in ADL mode as well. Use RET.LIS to return back to MOS 
 
+### Running BBC Basic for Z80
+
+1. Copy bbcbasic.bin from the bin directory in this project to the root directory of the Agon SD card
+2. Boot the AGON with MOS 0.04 or greater
+3. Check the file is on the SD card with a `CAT` or `.` command
+4. Type the following commands into MOS:
+	- `LOAD bbcbasic.bin &30000`
+	- `RUN &30000`
+5. You should then be greeted with the BBC Basic for Z80 prompt
+
 ### Etiquette
 
 Please do not issue pull requests or issues for this project; it is very much a work-in-progress.
