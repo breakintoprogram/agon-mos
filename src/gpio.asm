@@ -2,9 +2,10 @@
 ; Title:	AGON MOS - gpio code
 ; Author:	Dean Belfield
 ; Created:	15/07/2022
-; Last Updated:	15/07/2022
+; Last Updated:	24/07/2022
 ;
 ; Modinfo:
+; 24/07/2022:	Moved SWITCH_A to misc.asm
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -15,21 +16,8 @@
 			SEGMENT .STARTUP
 				
 			XDEF	GPIOB_SETMODE				
-			XDEF	SWITCH_A
+			XREF	SWITCH_A
 			
-; Switch on A - lookup table immediately after call
-;  A: Index into lookup table
-;
-SWITCH_A:		EX	(SP), HL		; Swap HL with the contents of the top of the stack
-			ADD	A, A			; Multiply A by two
-			ADD8U_HL 			; Add to HL (macro)
-			LD	A, (HL)			; follow the call. Fetch an address from the
-			INC	HL 			; table.
-			LD	H, (HL)
-			LD	L, A
-			EX	(SP), HL		; Swap this new address back, restores HL
-			RET				; Return program control to this new address			
-
 ;  A: Mode
 ;  B: Pins
 ;  				
