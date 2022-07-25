@@ -2,9 +2,10 @@
 ; Title:	AGON MOS - Equs
 ; Author:	Dean Belfield
 ; Created:	15/07/2022
-; Last Updated:	15/07/2022
+; Last Updated:	24/07/2022
 ;
 ; Modinfo:
+; 24/07/2022:	Added TMR2_CTL
 
 ; For GPIO
 ; PA not available on eZ80F92
@@ -73,3 +74,7 @@ PD4_IVECT    		EQU   	58h
 PD5_IVECT    		EQU   	5Ah
 PD6_IVECT    		EQU   	5Ch
 PD7_IVECT    		EQU   	5Eh
+
+; For vectors16.asm
+;
+TMR2_CTL		EQU	86h
