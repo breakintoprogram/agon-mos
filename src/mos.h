@@ -2,13 +2,14 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	14/07/2022
+ * Last Updated:	24/07/2022
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
  * 12/07/2022:		Added mos_cmdJMP
  * 13/07/2022:		Added mos_cmdSAVE
  * 14/07/2022:		Added mos_cmdRUN
+ * 24/07/2022:		Added mos_getkey
  */
 
 #ifndef MOS_H
@@ -21,6 +22,7 @@ typedef struct {
 
 void 	mos_fileError(int error);
 
+char	mos_getkey(void);
 void	mos_input(char * buffer, int bufferLength);
 void *	mos_getCommand(char * ptr);
 void	mos_exec(char * buffer, int bufferLength);

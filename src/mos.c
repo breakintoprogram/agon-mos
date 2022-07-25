@@ -2,13 +2,14 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	14/07/2022
+ * Last Updated:	25/07/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
  * 12/07/2022:		Added mos_cmdJMP
  * 13/07/2022:		Added mos_cmdSAVE, mos_cmdDEL, improved command parsing and file error reporting
  * 14/07/2022:		Added mos_cmdRUN
+ * 25/07/2022:		Added mos_getkey; variable keycode is now declared as a volatile
  */
 
 #include <eZ80.h>
@@ -25,7 +26,7 @@
 
 extern void exec16(long addr);
 
-extern char keycode;
+extern volatile char keycode;
 
 static t_mosCommand mosCommands[] = {
 	{ ".", 		&mos_cmdDIR },
@@ -67,16 +68,24 @@ void mos_fileError(int error) {
 	printf("%c%s\n\r", MOS_prompt, mos_fileErrors[error]);
 }
 
+char mos_getkey() {
+	char ch = 0;
+	while(ch == 0) {
+		ch = keycode;
+	}
+	while(keycode != 0);
+	return ch;
+}
+
 void mos_input(char * buffer, int bufferLength) {
-	INT ch = 0;
+	char ch = 0;
 	int index = 0;
 	int limit = bufferLength - 1;
 	
 	putch(MOS_prompt);
 	
 	while(ch != 13) {
-		ch = keycode;
-		keycode = 0;
+		ch = mos_getkey();
 		if(ch > 0) {
 			if(ch >= 32 && ch <= 126) {
 				if(index < limit) {
