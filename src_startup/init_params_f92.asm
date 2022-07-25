@@ -3,11 +3,12 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	15/07/2022
+; Last Updated:	24/07/2022
 ;
 ; Modinfo:
 ; 14/07/2022:	Added coldBoot detection, exec16 function
 ; 15/07/2022:	Added further hardware/firmware initialisation in __init
+; 24/07/2022:	Added timer2 global variable and moved exec_16 to misc.asm
 
 			INCLUDE	"../src/macros.inc"
 			INCLUDE	"../src/equs.inc"
@@ -45,8 +46,8 @@
 			XDEF	__exit
 			XDEF	_exit
 			
-			XDEF	__exec16
-			XDEF	_exec16
+			XREF	__exec16
+			XREF	_exec16
 			
 			XREF	GPIOB_SETMODE
 
@@ -148,9 +149,9 @@ __init:			ld a, %FF
 			ld a, i			; Register I should be 0 on cold boot
 			or a, a		
 			ld a, 1			; Set to 1 if cold boot
-			jr z, __coldBoot
+			jr z, $F
 			dec a			; Otherwise set to 0
-__coldBoot:		push af 		; Stack AF, will store later as __c_startup clears globals area
+$$:			push af 		; Stack AF, will store later as __c_startup clears globals area
 ;
 ; Initialize the interrupt vector table
 ;
@@ -187,45 +188,6 @@ __exit:
 _exit:
 _abort:			jr $                	; If we return from main loop forever here
 
-; Execute a program in RAM
-; void * _exec16(unsigned long address)
-; Params:
-; - address: The 24-bit address to call
-;
-; This function will call the 24 bit address and switch the eZ80 into Z80 mode (ADL=0)
-; The called function must do a RET.LIS (49h, C9h) and take care of preserving registers
-;
-__exec16:
-_exec16:		PUSH 	IY
-			LD	IY, 0
-			ADD	IY, SP		; Standard prologue
-			PUSH 	AF		; Stack any registers being used
-			PUSH	DE
-			PUSH	HL
-			LD	A, MB
-			PUSH	AF
-			LD	DE, (IY+6)	; Get the address
-			LD	A, (IY+8)	; And the high byte for the code segment
-			LD	MB, A		; Set the MBASE register		
-;
-; Write out a short subroutine "CALL.IS (DE): RET" to RAM
-;
-			LD	IY,_callSM	; Storage for the self modified routine
-			LD	(IY + 0), 49h	; CALL.IS llhh
-			LD	(IY + 1), CDh
-			LD	(IY + 2), E
-			LD	(IY + 3), D
-			LD	(IY + 4), C9h	; RET		
-			CALL	_callSM		; Call the subroutine
-			
-			POP	AF		; Restore the MBASE register
-			LD	MB, A
-			POP	HL		; Balance the stack
-			POP	DE
-			POP 	AF
-			LD	SP, IY          ; Standard epilogue
-			POP	IY
-			RET		 
 
 ; Define global constants
 ;
@@ -240,9 +202,12 @@ _SysClkFreq:		DL _SYS_CLK_FREQ
 		
 			XDEF _coldBoot		
 			XDEF _keycode
+			XDEF _timer2
+			XDEF _callSM
 
 _coldBoot:		DS 1			; extern char _coldBoot
 _keycode:		DS 1
+_timer2:		DS 3
 _callSM:		DS 5			; Self-modding code for CALL.IS (HL)
 	
 			END
