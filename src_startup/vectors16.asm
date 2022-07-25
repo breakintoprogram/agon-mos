@@ -3,11 +3,13 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	15/07/2022
+; Last Updated:	25/07/2022
 ;
 ; Modinfo:
 ; 11/07/2022:	Added RST_10 code - TX
 ; 15/07/2022:	Added __vertical_blank_handler
+; 24/07/2022:	Added RST_08 code - MOS API and moved Timer2 ISR into here from timer.c
+; 25/07/2022:	Runs in STMIX mode
 
 			INCLUDE	"../src/macros.inc"
 			INCLUDE	"../src/equs.inc"
@@ -28,10 +30,13 @@
 			XDEF	__vector_table
 
 			XDEF	_vblank_handler
+			XDEF	_timer2_handler
 			
+			XREF	_timer2
 			XREF	_keycode
 			XREF	serial_TX
 			XREF	serial_RX
+			XREF	mos_api
 
 NVECTORS 		EQU 48			; Number of interrupt vectors
 
@@ -58,11 +63,11 @@ RESTOREIMASK		MACRO
 
 _reset:	
 _rst0:			DI
-			RSMIX
+			STMIX
 			JP.LIL	__init
 		
-_rst8:			RET
-			DS	7
+_rst8:			JP.LIL	mos_api
+			DS	3
 		
 _rst10:			JP.LIL	serial_TX
 			DS	3
@@ -98,30 +103,43 @@ __nvectors:		DW NVECTORS            ; extern unsigned short _num_vectors;
 
 ; Default Non-Maskable Interrupt handler
 ;
-__default_nmi_handler:	RETN
+__default_nmi_handler:	RETN.LIL
 
 ; Default Maskable Interrupt handler
 ;
 __default_mi_handler:	EI
-			RETI
+			RETI.L
 		
 ; AGON Vertical Blank Interrupt handler
 ;
 _vblank_handler:	DI
 			PUSH		AF
-			SET_GPIO 	PB_DR, 2	; Need to set this to 1 for the interrupt to work correctly
+			SET_GPIO 	PB_DR, 2		; Need to set this to 2 for the interrupt to work correctly
 			PUSH		BC
 			PUSH		DE
 			PUSH		HL
 			CALL		serial_RX
-			JR		NC, _vblank_handler1
 			LD		(_keycode), A
-_vblank_handler1:	POP		HL
+			POP		HL
 			POP		DE
 			POP		BC
 			POP		AF
 			EI	
-			RETI
+			RETI.L
+			
+; AGON Timer 2 Interrupt Handler
+;
+_timer2_handler:	DI
+			PUSH	AF
+			IN0  	A,(TMR2_CTL)			; Clear the timer interrupt
+			PUSH	BC
+			LD	BC, (_timer2)			; Increment the timer
+			INC	BC
+			LD	(_timer2), BC
+			POP	BC
+			POP	AF
+			EI
+			RETI.L
 
 ; Initialize all potential interrupt vector locations with a known
 ; default handler.
@@ -129,51 +147,51 @@ _vblank_handler1:	POP		HL
 ; void _init_default_vectors(void);
 ;
 __init_default_vectors:
-_init_default_vectors:	push af
+_init_default_vectors:	PUSH	AF
 			SAVEIMASK
-			ld hl, __default_mi_handler
-			ld a, %C3
-			ld (__2nd_jump_table), a       ; place jp opcode
-			ld (__2nd_jump_table + 1), hl  ; __default_hndlr
-			ld hl, __2nd_jump_table
-			ld de, __2nd_jump_table + 4
-			ld bc, NVECTORS * 4 - 4
-			ldir
-			im 2                       ; Interrupt mode 2
-			ld a, __vector_table >> 8
-			ld i, a                    ; Load interrupt vector base
+			LD	HL, __default_mi_handler
+			LD	A, %C3
+			LD 	(__2nd_jump_table), A		; Place jp opcode
+			LD 	(__2nd_jump_table + 1), HL	; __default_hndlr
+			LD 	HL, __2nd_jump_table
+			LD	DE, __2nd_jump_table + 4
+			LD	BC, NVECTORS * 4 - 4
+			LDIR
+			IM	2
+			LD 	A, __vector_table >> 8
+			LD 	I, A				; Load interrupt vector base
 			RESTOREIMASK
-			pop af
-			ret
+			POP	AF
+			RET
 
 ; Installs a user interrupt handler in the 2nd interrupt vector jump table
 ;
 ; void * _set_vector(unsigned int vector, void(*handler)(void));
 ;
 __set_vector:
-_set_vector:		push iy
-			ld iy, 0
-			add iy, sp                 ; Standard prologue
-			push af
+_set_vector:		PUSH	IY
+			LD	IY, 0
+			ADD	IY, SP				; Standard prologue
+			PUSH	AF
 			SAVEIMASK
-			ld bc, 0                   ; clear bc
-			ld b, 2                    ; calculate 2nd jump table offset
-			ld c, (iy+6)               ; vector offset
-			mlt bc                     ; bc is 2nd jp table offset
-			ld hl, __2nd_jump_table
-			add hl, bc                 ; hl is location of jp in 2nd jp table
-			ld (hl), %C3               ; place jp opcode just in case
-			inc hl                     ; hl is jp destination address
-			ld bc, (iy+9)              ; bc is isr address
-			ld de, (hl)                ; save previous handler
-			ld (hl), bc                ; store new isr address
-			push de
-			pop hl                     ; return previous handler
+			LD	BC, 0				; Clear BC
+			LD	B, 2				; Calculate 2nd jump table offset
+			LD	C, (IY + 6)			; Vector offset
+			MLT	BC				; BC is 2nd jp table offset
+			LD	HL, __2nd_jump_table
+			ADD	HL, BC				; HL is location of jp in 2nd jp table
+			LD 	(HL), %C3			; Place jp opcode just in case
+			INC	HL				; HL is jp destination address
+			LD	BC, (IY + 9)			; BC is isr address
+			LD 	DE, (HL)			; Save previous handler
+			LD 	(HL), BC			; Store new isr address
+			PUSH	DE
+			POP	HL				; Return previous handler
 			RESTOREIMASK
-			pop af
-			ld sp, iy                  ; standard epilogue
-			pop iy
-			ret
+			POP	AF
+			LD 	SP, IY				; Standard epilogue
+			POP	IY
+			RET
 
 			DEFINE IVJMPTBL, SPACE = RAM
 			SEGMENT IVJMPTBL
@@ -193,106 +211,106 @@ __2nd_jump_table:	DS NVECTORS * 4
 			DEFINE .IVECTS, SPACE = ROM, ALIGN = 100h
 			SEGMENT .IVECTS
 
-__vector_table:		dw __1st_jump_table + %00
-			dw __1st_jump_table + %04
-			dw __1st_jump_table + %08
-			dw __1st_jump_table + %0c
-			dw __1st_jump_table + %10
-			dw __1st_jump_table + %14
-			dw __1st_jump_table + %18
-			dw __1st_jump_table + %1c
-			dw __1st_jump_table + %20
-			dw __1st_jump_table + %24
-			dw __1st_jump_table + %28
-			dw __1st_jump_table + %2c
-			dw __1st_jump_table + %30
-			dw __1st_jump_table + %34
-			dw __1st_jump_table + %38
-			dw __1st_jump_table + %3c
-			dw __1st_jump_table + %40
-			dw __1st_jump_table + %44
-			dw __1st_jump_table + %48
-			dw __1st_jump_table + %4c
-			dw __1st_jump_table + %50
-			dw __1st_jump_table + %54
-			dw __1st_jump_table + %58
-			dw __1st_jump_table + %5c
-			dw __1st_jump_table + %60
-			dw __1st_jump_table + %64
-			dw __1st_jump_table + %68
-			dw __1st_jump_table + %6c
-			dw __1st_jump_table + %70
-			dw __1st_jump_table + %74
-			dw __1st_jump_table + %78
-			dw __1st_jump_table + %7c
-			dw __1st_jump_table + %80
-			dw __1st_jump_table + %84
-			dw __1st_jump_table + %88
-			dw __1st_jump_table + %8c
-			dw __1st_jump_table + %90
-			dw __1st_jump_table + %94
-			dw __1st_jump_table + %98
-			dw __1st_jump_table + %9c
-			dw __1st_jump_table + %a0
-			dw __1st_jump_table + %a4
-			dw __1st_jump_table + %a8
-			dw __1st_jump_table + %ac
-			dw __1st_jump_table + %b0
-			dw __1st_jump_table + %b4
-			dw __1st_jump_table + %b8
-			dw __1st_jump_table + %bc
+__vector_table:		DW __1st_jump_table + %00
+			DW __1st_jump_table + %04
+			DW __1st_jump_table + %08
+			DW __1st_jump_table + %0c
+			DW __1st_jump_table + %10
+			DW __1st_jump_table + %14
+			DW __1st_jump_table + %18
+			DW __1st_jump_table + %1c
+			DW __1st_jump_table + %20
+			DW __1st_jump_table + %24
+			DW __1st_jump_table + %28
+			DW __1st_jump_table + %2c
+			DW __1st_jump_table + %30
+			DW __1st_jump_table + %34
+			DW __1st_jump_table + %38
+			DW __1st_jump_table + %3c
+			DW __1st_jump_table + %40
+			DW __1st_jump_table + %44
+			DW __1st_jump_table + %48
+			DW __1st_jump_table + %4c
+			DW __1st_jump_table + %50
+			DW __1st_jump_table + %54
+			DW __1st_jump_table + %58
+			DW __1st_jump_table + %5c
+			DW __1st_jump_table + %60
+			DW __1st_jump_table + %64
+			DW __1st_jump_table + %68
+			DW __1st_jump_table + %6c
+			DW __1st_jump_table + %70
+			DW __1st_jump_table + %74
+			DW __1st_jump_table + %78
+			DW __1st_jump_table + %7c
+			DW __1st_jump_table + %80
+			DW __1st_jump_table + %84
+			DW __1st_jump_table + %88
+			DW __1st_jump_table + %8c
+			DW __1st_jump_table + %90
+			DW __1st_jump_table + %94
+			DW __1st_jump_table + %98
+			DW __1st_jump_table + %9c
+			DW __1st_jump_table + %a0
+			DW __1st_jump_table + %a4
+			DW __1st_jump_table + %a8
+			DW __1st_jump_table + %ac
+			DW __1st_jump_table + %b0
+			DW __1st_jump_table + %b4
+			DW __1st_jump_table + %b8
+			DW __1st_jump_table + %bc
 
 ; 1st Interrupt Vector Jump Table
 ;  - this table must reside in the first 64K bytes of memory
 ;  - each 4-byte entry is a jump to the 2nd jump table plus offset
 ;
-__1st_jump_table:	jp __2nd_jump_table + %00
-			jp __2nd_jump_table + %04
-			jp __2nd_jump_table + %08
-			jp __2nd_jump_table + %0c
-			jp __2nd_jump_table + %10
-			jp __2nd_jump_table + %14
-			jp __2nd_jump_table + %18
-			jp __2nd_jump_table + %1c
-			jp __2nd_jump_table + %20
-			jp __2nd_jump_table + %24
-			jp __2nd_jump_table + %28
-			jp __2nd_jump_table + %2c
-			jp __2nd_jump_table + %30
-			jp __2nd_jump_table + %34
-			jp __2nd_jump_table + %38
-			jp __2nd_jump_table + %3c
-			jp __2nd_jump_table + %40
-			jp __2nd_jump_table + %44
-			jp __2nd_jump_table + %48
-			jp __2nd_jump_table + %4c
-			jp __2nd_jump_table + %50
-			jp __2nd_jump_table + %54
-			jp __2nd_jump_table + %58
-			jp __2nd_jump_table + %5c
-			jp __2nd_jump_table + %60
-			jp __2nd_jump_table + %64
-			jp __2nd_jump_table + %68
-			jp __2nd_jump_table + %6c
-			jp __2nd_jump_table + %70
-			jp __2nd_jump_table + %74
-			jp __2nd_jump_table + %78
-			jp __2nd_jump_table + %7c
-			jp __2nd_jump_table + %80
-			jp __2nd_jump_table + %84
-			jp __2nd_jump_table + %88
-			jp __2nd_jump_table + %8c
-			jp __2nd_jump_table + %90
-			jp __2nd_jump_table + %94
-			jp __2nd_jump_table + %98
-			jp __2nd_jump_table + %9c
-			jp __2nd_jump_table + %a0
-			jp __2nd_jump_table + %a4
-			jp __2nd_jump_table + %a8
-			jp __2nd_jump_table + %ac
-			jp __2nd_jump_table + %b0
-			jp __2nd_jump_table + %b4
-			jp __2nd_jump_table + %b8
-			jp __2nd_jump_table + %bc
+__1st_jump_table:	JP __2nd_jump_table + %00
+			JP __2nd_jump_table + %04
+			JP __2nd_jump_table + %08
+			JP __2nd_jump_table + %0c
+			JP __2nd_jump_table + %10
+			JP __2nd_jump_table + %14
+			JP __2nd_jump_table + %18
+			JP __2nd_jump_table + %1c
+			JP __2nd_jump_table + %20
+			JP __2nd_jump_table + %24
+			JP __2nd_jump_table + %28
+			JP __2nd_jump_table + %2c
+			JP __2nd_jump_table + %30
+			JP __2nd_jump_table + %34
+			JP __2nd_jump_table + %38
+			JP __2nd_jump_table + %3c
+			JP __2nd_jump_table + %40
+			JP __2nd_jump_table + %44
+			JP __2nd_jump_table + %48
+			JP __2nd_jump_table + %4c
+			JP __2nd_jump_table + %50
+			JP __2nd_jump_table + %54
+			JP __2nd_jump_table + %58
+			JP __2nd_jump_table + %5c
+			JP __2nd_jump_table + %60
+			JP __2nd_jump_table + %64
+			JP __2nd_jump_table + %68
+			JP __2nd_jump_table + %6c
+			JP __2nd_jump_table + %70
+			JP __2nd_jump_table + %74
+			JP __2nd_jump_table + %78
+			JP __2nd_jump_table + %7c
+			JP __2nd_jump_table + %80
+			JP __2nd_jump_table + %84
+			JP __2nd_jump_table + %88
+			JP __2nd_jump_table + %8c
+			JP __2nd_jump_table + %90
+			JP __2nd_jump_table + %94
+			JP __2nd_jump_table + %98
+			JP __2nd_jump_table + %9c
+			JP __2nd_jump_table + %a0
+			JP __2nd_jump_table + %a4
+			JP __2nd_jump_table + %a8
+			JP __2nd_jump_table + %ac
+			JP __2nd_jump_table + %b0
+			JP __2nd_jump_table + %b4
+			JP __2nd_jump_table + %b8
+			JP __2nd_jump_table + %bc
 
 			END
