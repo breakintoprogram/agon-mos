@@ -1,6 +1,6 @@
 # agon-mos
 
-The Machine Operating System for Agon
+Part of the official Quark firmware for the Agon series of microcomputers
 
 ### What is the Agon
 
