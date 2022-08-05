@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	25/07/2022
+ * Last Updated:	03/08/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -10,6 +10,7 @@
  * 13/07/2022:		Added mos_cmdSAVE, mos_cmdDEL, improved command parsing and file error reporting
  * 14/07/2022:		Added mos_cmdRUN
  * 25/07/2022:		Added mos_getkey; variable keycode is now declared as a volatile
+ * 03/08/2022:		Added a handful of MOS API calls
  */
 
 #include <eZ80.h>
@@ -22,11 +23,11 @@
 #include "uart.h"
 #include "ff.h"
 
-#define MOS_prompt '*'
-
 extern void exec16(long addr);
 
 extern volatile char keycode;
+
+t_mosFileObject	mosFileObjects[mos_maxOpenFiles];
 
 static t_mosCommand mosCommands[] = {
 	{ ".", 		&mos_cmdDIR },
@@ -37,6 +38,7 @@ static t_mosCommand mosCommands[] = {
 	{ "DEL", 	&mos_cmdDEL },
 	{ "JMP",	&mos_cmdJMP },
 	{ "RUN", 	&mos_cmdRUN },
+	{ "CD", 	&mos_cmdCD },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -73,41 +75,17 @@ char mos_getkey() {
 	while(ch == 0) {
 		ch = keycode;
 	}
-	while(keycode != 0);
+//	while(keycode != 0);
+	keycode = 0;
 	return ch;
 }
 
-void mos_input(char * buffer, int bufferLength) {
-	char ch = 0;
-	int index = 0;
-	int limit = bufferLength - 1;
-	
+UINT24 mos_input(char * buffer, int bufferLength) {
+	INT24 retval;
 	putch(MOS_prompt);
-	
-	while(ch != 13) {
-		ch = mos_getkey();
-		if(ch > 0) {
-			if(ch >= 32 && ch <= 126) {
-				if(index < limit) {
-					putch(ch);
-					buffer[index] = ch;
-					index++;
-				}
-			}
-			else {				
-				switch(ch) {
-					case 127:	// Backspace
-						if(index > 0) {
-							putch(ch);
-							buffer[index--] = 0;							
-						}
-						break;
-				}					
-			}
-		}		
-	}
-	buffer[index] = 0x00;
+	retval = mos_EDITLINE(buffer, bufferLength);
 	printf("\n\r");
+	return retval;
 }
 
 void * mos_getCommand(char * ptr) {
@@ -122,7 +100,7 @@ void * mos_getCommand(char * ptr) {
 	return 0;
 }
 
-BOOL mos_parseNumber(char * ptr, long * p_Value) {
+BOOL mos_parseNumber(char * ptr, UINT24 * p_Value) {
 	char * 	p = ptr;
 	char * 	e;
 	int 	base = 10;
@@ -175,7 +153,167 @@ void mos_exec(char * buffer, int bufferLength) {
 	}
 }
 
-int mos_cmdDIR(char * ptr) {
+int mos_cmdDIR(char * ptr) {	
+	FRESULT	fr;
+	
+	fr = mos_DIR();
+	mos_fileError(fr);
+	return 0;
+}
+
+int mos_cmdLOAD(char * ptr) {
+	FRESULT	fr;
+	char *  filename;
+	UINT24 	addr;
+	
+	if(
+		!mos_parseString(NULL, &filename) ||
+		!mos_parseNumber(NULL, &addr)
+	) {
+		return 1;
+	}
+	fr = mos_LOAD(filename, addr, 0);
+	mos_fileError(fr);
+	return 0;	
+}
+
+int mos_cmdSAVE(char * ptr) {
+	FRESULT	fr;
+	char *  filename;
+	UINT24 	addr;
+	UINT24 	size;
+	
+	if(
+		!mos_parseString(NULL, &filename) ||
+		!mos_parseNumber(NULL, &addr) ||
+		!mos_parseNumber(NULL, &size)
+	) {
+		return 1;
+	}
+	fr = mos_SAVE(filename, addr, size);
+	mos_fileError(fr);
+	return 0;
+}
+
+int mos_cmdDEL(char * ptr) {
+	char *  filename;
+	
+	FRESULT	fr;
+	
+	if(
+		!mos_parseString(NULL, &filename) 
+	) {
+		return 1;
+	}
+	fr = mos_DEL(filename);
+	mos_fileError(fr);
+	return 0;
+}
+
+int mos_cmdJMP(char *ptr) {
+	UINT24 	addr;
+	void (* dest)(void) = 0;
+	if(!mos_parseNumber(NULL, &addr)) {
+		return 1;
+	};
+	dest = (void *)addr;
+	dest();
+	return 0;
+}
+
+int mos_cmdRUN(char *ptr) {
+	UINT24 	addr;
+	void (* dest)(void) = 0;
+	if(!mos_parseNumber(NULL, &addr)) {
+		return 1;
+	};
+	exec16(addr);
+	return 0;
+}
+
+int mos_cmdCD(char * ptr) {
+	char *  path;
+	
+	FRESULT	fr;
+	
+	if(
+		!mos_parseString(NULL, &path) 
+	) {
+		return 1;
+	}
+	fr = f_chdir(path);
+	mos_fileError(fr);
+	return 0;
+}
+
+UINT24 mos_EDITLINE(char * buffer, int bufferLength) {
+	char ch = 0;
+	int index = 0;
+	int limit = bufferLength - 1;
+	
+	while(ch != 13 && ch != 27) {
+		ch = mos_getkey();
+		if(ch > 0) {
+			if(ch >= 32 && ch <= 126) {
+				if(index < limit) {
+					putch(ch);
+					buffer[index] = ch;
+					index++;
+				}
+			}
+			else {				
+				switch(ch) {
+					case 127:	// Backspace
+						if(index > 0) {
+							putch(ch);
+							buffer[index--] = 0;							
+						}
+						break;
+				}					
+			}
+		}		
+	}
+	buffer[index] = 0x00;
+	return ch;
+}
+
+UINT24 mos_LOAD(char * filename, INT24 address, INT24 size) {
+	FRESULT	fr;
+	FIL	   	fil;
+	UINT   	br;	
+	void * 	dest;
+	FSIZE_t fSize;
+	
+	fr = f_open(&fil, filename, FA_READ);
+	if(fr == FR_OK) {
+		fSize = f_size(&fil);
+		fr = f_read(&fil, (void *)address, fSize, &br);		
+	}
+	f_close(&fil);	
+	return fr;
+}
+
+UINT24	mos_SAVE(char * filename, INT24 address, INT24 size) {
+	FRESULT	fr;
+	FIL	   	fil;
+	UINT   	br;	
+	
+	fr = f_open(&fil, filename, FA_WRITE | FA_CREATE_NEW);
+	if(fr == FR_OK) {
+		fr = f_write(&fil, (void *)address, size, &br);
+	}
+	f_close(&fil);	
+	return fr;
+}
+
+UINT24	mos_CD(char *path) {
+	FRESULT	fr;
+
+	fr = f_chdir(path);
+	return fr;
+}
+
+UINT24	mos_DIR(void) {
 	FRESULT	fr;
 	DIR	  	dir;
 	static 	FILINFO  fno;
@@ -184,10 +322,8 @@ int mos_cmdDIR(char * ptr) {
 	
 	fr = f_getlabel("", str, 0);
 	if(fr != 0) {
-		mos_fileError(fr);
-		return 0;
-	}
-	
+		return fr;
+	}	
 	printf("Volume: ");
 	if(strlen(str) > 0) {
 		printf("%s", str);
@@ -197,7 +333,7 @@ int mos_cmdDIR(char * ptr) {
 	}
 	printf("\n\r\n\r");
 	
-	fr = f_opendir(&dir, "/");
+	fr = f_opendir(&dir, ".");
 	if(fr == FR_OK) {
 		for(;;) {
 			fr = f_readdir(&dir, &fno);
@@ -213,112 +349,67 @@ int mos_cmdDIR(char * ptr) {
 			printf("%04d/%02d/%02d\t%02d:%02d %c %*d %s\n\r", yr + 1980, mo, da, hr, mi, fno.fattrib & AM_DIR ? 'D' : ' ', 8, fno.fsize, fno.fname);
 		}
 	}
-	else {
-		mos_fileError(fr);	
-	}
 	f_closedir(&dir);
-	printf("\n\r");
-	return 0;
+	return fr;
 }
 
-int mos_cmdLOAD(char * ptr) {
-	char *  filename;
-	long 	addr;
+UINT24 mos_DEL(char * filename) {
+	FRESULT	fr;	
 	
-	FRESULT	fr;
-	FIL	   	fil;
-	UINT   	br;	
-	void * 	dest;
-	FSIZE_t fSize;
-	
-	if(
-		!mos_parseString(NULL, &filename) ||
-		!mos_parseNumber(NULL, &addr)
-	) {
-		return 1;
-	}
-	
-	dest = (void *)addr;
-	
-	fr = f_open(&fil, filename, FA_READ);
-	if(fr == FR_OK) {
-		fSize = f_size(&fil);
-		fr = f_read(&fil, dest, fSize, &br);
-		mos_fileError(fr);
-	}
-	else {
-		mos_fileError(fr);
-		return 0;
-	}
-	f_close(&fil);	
-	return 0;
-}
-
-int mos_cmdSAVE(char * ptr) {
-	char *  filename;
-	long 	addr;
-	long 	size;
-	
-	FRESULT	fr;
-	FIL	   	fil;
-	UINT   	br;	
-	void * 	dest;
-	
-	if(
-		!mos_parseString(NULL, &filename) ||
-		!mos_parseNumber(NULL, &addr) ||
-		!mos_parseNumber(NULL, &size)
-	) {
-		return 1;
-	}
-	
-	dest = (void *)addr;
-	
-	fr = f_open(&fil, filename, FA_WRITE | FA_CREATE_NEW);
-	if(fr == FR_OK) {
-		fr = f_write(&fil, dest, size, &br);
-		mos_fileError(fr);
-	}
-	else {
-		mos_fileError(fr);
-		return 0;
-	}
-	f_close(&fil);	
-	return 0;
-}
-
-int mos_cmdDEL(char * ptr) {
-	char *  filename;
-	
-	FRESULT	fr;
-	
-	if(
-		!mos_parseString(NULL, &filename) 
-	) {
-		return 1;
-	}
 	fr = f_unlink(filename);
-	mos_fileError(fr);
+	return fr;
+}
+
+UINT24 mos_FOPEN(char * filename, UINT8 mode) {
+	FRESULT fr;
+	int		i;
+	
+	for(i = 0; i < mos_maxOpenFiles; i++) {
+		if(mosFileObjects[i].free == 0) {
+			fr = f_open(&mosFileObjects[i].fileObject, filename, mode);
+			if(fr == FR_OK) {
+				mosFileObjects[i].free = 1;
+				return i + 1;
+			}
+		}
+	}
 	return 0;
 }
 
-int mos_cmdJMP(char *ptr) {
-	long 	addr;
-	void (* dest)(void) = 0;
-	if(!mos_parseNumber(NULL, &addr)) {
-		return 1;
-	};
-	dest = (void *)addr;
-	dest();
+UINT24 mos_FCLOSE(UINT8 fh) {
+	FRESULT fr;
+	int 	i;
+	
+	if(fh > 0 && fh <= mos_maxOpenFiles) {
+		i = fh - 1;
+		if(&mosFileObjects[i].free > 0) {
+			fr = f_close(&mosFileObjects[i].fileObject);
+			mosFileObjects[i].free = 0;
+		}
+	}
+	else {
+		for(i = 0; i < mos_maxOpenFiles; i++) {
+			if(mosFileObjects[i].free > 0) {
+				fr = f_close(&mosFileObjects[i].fileObject);
+				mosFileObjects[i].free = 0;
+			}
+		}
+	}	
+	return fh;	
+}
+
+char	mos_FGETC(UINT8 fh) {
+	FRESULT fr;
+	UINT	br;
+	char	c;
+
+	fr = f_read(&mosFileObjects[fh - 1].fileObject, &c, 1, &br); 
+	if(fr == FR_OK) {
+		return	c;
+	}
 	return 0;
 }
 
-int mos_cmdRUN(char *ptr) {
-	long 	addr;
-	void (* dest)(void) = 0;
-	if(!mos_parseNumber(NULL, &addr)) {
-		return 1;
-	};
-	exec16(addr);
-	return 0;
+void	mos_FPUTC(UINT8 fh, char c) {
+	f_putc(c, &mosFileObjects[fh - 1].fileObject);
 }
