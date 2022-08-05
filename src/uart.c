@@ -2,9 +2,10 @@
  * Title:			AGON MOS - UART code
  * Author:			Dean Belfield
  * Created:			06/07/2022
- * Last Updated:	06/07/2022
+ * Last Updated:	03/08/2022
  * 
  * Modinfo:
+ * 03/08/2022:		Enabled UART0 receive interrupt
  */
  
 #include <stddef.h>
@@ -44,7 +45,8 @@ UCHAR open_UART0(UART *pUART) {
 	UART0_LCTL &= (~UART_LCTL_DLAB) ; 								//! Reset DLAB; dont disturb other bits
 	UART0_MCTL = 0x00 ;												//! Bring modem control register to reset value.
 	UART0_FCTL = 0x07 ;												//! Disable hardware FIFOs.
-	UART0_IER = 0x00 ;												//! Disable all UART interrupts.
+//	UART0_IER = 0x00 ;												//! Enable UART receive interrupt
+	UART0_IER = UART_IER_RECEIVEINT ;
 	
 	SETREG_LCR0(pUART->dataBits, pUART->stopBits, pUART->parity);	//! Set the line status register.
 	
