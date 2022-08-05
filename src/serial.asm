@@ -2,11 +2,12 @@
 ; Title:	AGON MOS - UART code
 ; Author:	Dean Belfield
 ; Created:	11/07/2022
-; Last Updated:	11/07/2022
+; Last Updated:	27/07/2022
 ;
 ; Modinfo:
+; 27/07/2022:	Reverted serial_TX back to use RET, not RET.L and increased timeout
 
-			.ASSUME	ADL = 0
+			.ASSUME	ADL = 1
 			
 			DEFINE .STARTUP, SPACE = ROM
 			SEGMENT .STARTUP
@@ -31,7 +32,7 @@ REG_MSR:		EQU	PORT+6		; Modem status
 
 REG_SCR:		EQU 	PORT+7		; Scratch
 
-TX_WAIT			EQU	2048		; Count before a TX times out
+TX_WAIT			EQU	16384 		; Count before a TX times out
 
 UART_LSR_ERR		EQU 	%80		; Error
 UART_LSR_ETX		EQU 	%40		; Transmit empty
