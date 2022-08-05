@@ -3,12 +3,14 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	24/07/2022
+; Last Updated: 01/08/2022
 ;
 ; Modinfo:
 ; 14/07/2022:	Added coldBoot detection, exec16 function
 ; 15/07/2022:	Added further hardware/firmware initialisation in __init
 ; 24/07/2022:	Added timer2 global variable and moved exec_16 to misc.asm
+; 26/07/2022:	Added _tmpLHU
+; 01/08/2022:	Moved global variables to globals.asm
 
 			INCLUDE	"../src/macros.inc"
 			INCLUDE	"../src/equs.inc"
@@ -50,7 +52,13 @@
 			XREF	_exec16
 			
 			XREF	GPIOB_SETMODE
-
+			
+			XREF 	_coldBoot		
+			XREF 	_keycode
+			XREF 	_timer2
+			XREF 	_callSM
+			XREF 	_tmpLHU			
+;			
 ; Startup code
 ;
 			DEFINE .STARTUP, SPACE = ROM
@@ -195,19 +203,5 @@ _abort:			jr $                	; If we return from main loop forever here
 			XDEF _SysClkFreq
 
 _SysClkFreq:		DL _SYS_CLK_FREQ
-	
-; Define global vars
-;
-			SEGMENT DATA
-		
-			XDEF _coldBoot		
-			XDEF _keycode
-			XDEF _timer2
-			XDEF _callSM
-
-_coldBoot:		DS 1			; extern char _coldBoot
-_keycode:		DS 1
-_timer2:		DS 3
-_callSM:		DS 5			; Self-modding code for CALL.IS (HL)
-	
+			
 			END
