@@ -3,13 +3,14 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	25/07/2022
+; Last Updated:	03/08/2022
 ;
 ; Modinfo:
 ; 11/07/2022:	Added RST_10 code - TX
 ; 15/07/2022:	Added __vertical_blank_handler
 ; 24/07/2022:	Added RST_08 code - MOS API and moved Timer2 ISR into here from timer.c
 ; 25/07/2022:	Runs in STMIX mode
+; 03/08/2022:	Added RST handlers, moved interrupt handlers to interrupts.asm
 
 			INCLUDE	"../src/macros.inc"
 			INCLUDE	"../src/equs.inc"
@@ -28,15 +29,9 @@
 			XDEF	__2nd_jump_table
 			XDEF	__1st_jump_table
 			XDEF	__vector_table
-
-			XDEF	_vblank_handler
-			XDEF	_timer2_handler
 			
-			XREF	_timer2
-			XREF	_keycode
-			XREF	serial_TX
-			XREF	serial_RX
 			XREF	mos_api
+			XREF	serial_TX
 
 NVECTORS 		EQU 48			; Number of interrupt vectors
 
@@ -66,10 +61,10 @@ _rst0:			DI
 			STMIX
 			JP.LIL	__init
 		
-_rst8:			JP.LIL	mos_api
+_rst8:			JP.LIL	_rst_08_handler
 			DS	3
 		
-_rst10:			JP.LIL	serial_TX
+_rst10:			JP.LIL	_rst_10_handler
 			DS	3
 
 _rst18:			RET
@@ -100,6 +95,15 @@ _nmi:			JP.LIL	__default_nmi_handler
 ; Number of vectors supported
 ;
 __nvectors:		DW NVECTORS            ; extern unsigned short _num_vectors;
+	
+; AGON RST handlers
+;
+_rst_08_handler:	CALL		mos_api
+			RET.L
+
+_rst_10_handler:	CALL		serial_TX
+			JR		NC, _rst_10_handler
+			RET.L	
 
 ; Default Non-Maskable Interrupt handler
 ;
@@ -109,38 +113,7 @@ __default_nmi_handler:	RETN.LIL
 ;
 __default_mi_handler:	EI
 			RETI.L
-		
-; AGON Vertical Blank Interrupt handler
-;
-_vblank_handler:	DI
-			PUSH		AF
-			SET_GPIO 	PB_DR, 2		; Need to set this to 2 for the interrupt to work correctly
-			PUSH		BC
-			PUSH		DE
-			PUSH		HL
-			CALL		serial_RX
-			LD		(_keycode), A
-			POP		HL
-			POP		DE
-			POP		BC
-			POP		AF
-			EI	
-			RETI.L
-			
-; AGON Timer 2 Interrupt Handler
-;
-_timer2_handler:	DI
-			PUSH	AF
-			IN0  	A,(TMR2_CTL)			; Clear the timer interrupt
-			PUSH	BC
-			LD	BC, (_timer2)			; Increment the timer
-			INC	BC
-			LD	(_timer2), BC
-			POP	BC
-			POP	AF
-			EI
-			RETI.L
-
+					
 ; Initialize all potential interrupt vector locations with a known
 ; default handler.
 ;
