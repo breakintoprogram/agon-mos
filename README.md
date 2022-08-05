@@ -28,8 +28,9 @@ NB:
 1. Commands are case sensitive and all parameters are space delimited.
 2. Numbers are in decimal and can be prefixed by '&' for hexadecimal.
 3. Addresses are 24-bit:
-	- &000000 to &01FFFF: ROM
-	- &020000 to &09FFFF: RAM
+	- `&000000 - &01FFFF`: MOS (Flash ROM)
+	- `&400000 - &0BDFFF`: User RAM
+	- `&0BE000 - 0BFFFFF`: Global heap and stack
 4. The RUN command is incomplete - it will eventually call code in ADL mode as well. Use RET.LIS to return back to MOS 
 
 ### Running BBC Basic for Z80
@@ -38,8 +39,8 @@ NB:
 2. Boot the AGON with MOS 0.04 or greater
 3. Check the file is on the SD card with a `CAT` or `.` command
 4. Type the following commands into MOS:
-	- `LOAD bbcbasic.bin &30000`
-	- `RUN &30000`
+	- `LOAD bbcbasic.bin &40000`
+	- `RUN &40000`
 5. You should then be greeted with the BBC Basic for Z80 prompt
 
 ### Etiquette

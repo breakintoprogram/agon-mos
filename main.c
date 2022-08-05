@@ -2,13 +2,14 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	25/07/2022
+ * Last Updated:	03/08/2022
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
  * 13/07/2022:		Version 0.02
  * 15/07/2022:		Version 0.03: Warm boot support, VBLANK interrupt
  * 25/07/2022:		Version 0.04; Tweaks to initialisation and interrupts
+ * 03/08/2022:		Version 0.05: Extended MOS for BBC Basic, added config file
  */
 
 #include <eZ80.h>
@@ -24,12 +25,15 @@
 #include "mos.h"
 
 #define		MOS_version		0
-#define		MOS_revision 	4
+#define		MOS_revision 	5
+
+#define		enable_config	1		// 0 = disable config loading, 1 = enable
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
 extern void 	vblank_handler(void);
 extern void 	timer2_handler(void);
+extern void 	uart0_handler(void);
 
 extern char coldBoot;				// 1 = cold boot, 0 = warm boot
 extern volatile	char keycode;		// Keycode 		
@@ -53,6 +57,27 @@ void wait_ESP32(void) {
 void init_interrupts(void) {
 	set_vector(PORTB1_IVECT, vblank_handler); 	// 0x32
 	set_vector(PRT2_IVECT, timer2_handler);		// 0x0E
+	set_vector(UART0_IVECT, uart0_handler);		// 0x18
+}
+
+// Load and run the config file 
+//
+UINT24 load_config(char * filename) {
+	FRESULT	fr;
+	FIL	   	fil;
+	UINT   	br;	
+	void * 	dest;
+	FSIZE_t fSize;
+	
+	fr = f_open(&fil, filename, FA_READ);
+	if(fr == FR_OK) {
+		while(!f_eof(&fil)) {
+			f_gets(&cmd, sizeof(cmd), &fil);
+			mos_exec(&cmd, sizeof(cmd));
+		}
+	}
+	f_close(&fil);	
+	return fr;	
 }
 
 // The main loop
@@ -74,15 +99,32 @@ int main(void) {
 	if(coldBoot > 0) {		// If a cold boot has been detected
 		wait_ESP32();		// Wait for the ESP32 to finish its bootup
 	}
+	else {					// Otherwise warm boot,
+		putch(12);			// Clear the screen
+	}
+	printf("AGON MOS Version %d.%02d\n\r\n\r", MOS_version, MOS_revision);	
 	EI();					// Enable the interrupts now
-	
+
+
 	f_mount(&fs, "", 1);	// Mount the SD card
 
-	printf("AGON MOS Version %d.%02d\n\r\n\r", MOS_version, MOS_revision);
+	// Load the autoexec.bat config file
+	//
+	#if enable_config == 1
+	if(coldBoot > 0) {
+		load_config("autoexec.txt");
+	}	
+	#endif
 	
+	// The main loop
+	//
 	while(1) {
-		mos_input(&cmd, sizeof(cmd));
-		mos_exec(&cmd, sizeof(cmd));
+		if(mos_input(&cmd, sizeof(cmd)) == 13) {
+			mos_exec(&cmd, sizeof(cmd));
+		}
+		else {
+			printf("%cEscape\n\r", MOS_prompt);
+		}
 	}
 
 	return 0;

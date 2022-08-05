@@ -14,8 +14,8 @@
       <device />
       <externalAddress>100000</externalAddress>
       <externalAutoSelect>false</externalAutoSelect>
-      <externalRamLower>20000</externalRamLower>
-      <externalRamUpper>9FFFF</externalRamUpper>
+      <externalRamLower>40000</externalRamLower>
+      <externalRamUpper>BFFFF</externalRamUpper>
       <manufacturer />
       <units>1</units>
       <usingExternal>false</usingExternal>
@@ -26,8 +26,8 @@
          <CS0>
             <busMode>1</busMode>
             <controlRegister>8</controlRegister>
-            <lower>2</lower>
-            <upper>9</upper>
+            <lower>4</lower>
+            <upper>B</upper>
          </CS0>
          <CS1>
             <busMode>0</busMode>

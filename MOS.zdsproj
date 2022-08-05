@@ -20,6 +20,9 @@
 <file filter-key="">src\mos_api.asm</file>
 <file filter-key="">src\misc.asm</file>
 <file filter-key="">src_startup\vectors16.asm</file>
+<file filter-key="">src_startup\globals.asm</file>
+<file filter-key="">src\vdp_protocol.asm</file>
+<file filter-key="">src\interrupts.asm</file>
 </files>
 
 <!-- configuration information -->
@@ -125,7 +128,7 @@
 <option name="useadddirectives" type="boolean" change-action="build">false</option>
 <option name="linkconfig" type="string" change-action="build">Standard</option>
 <option name="flashinfo" type="string" change-action="build">000000-0000FF</option>
-<option name="ram" type="string" change-action="build">020000-09FFFF</option>
+<option name="ram" type="string" change-action="build">0BE000-0BFFFF</option>
 <option name="rom" type="string" change-action="build">000000-01FFFF</option>
 <option name="extio" type="string" change-action="build">000000-00FFFF</option>
 <option name="intio" type="string" change-action="build">000000-0000FF</option>
