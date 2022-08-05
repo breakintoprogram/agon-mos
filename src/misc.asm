@@ -2,9 +2,10 @@
 ; Title:	AGON MOS - Miscellaneous helper functions
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	24/07/2022
+; Last Updated:	03/08/2022
 ;
 ; Modinfo:
+; 03/08/2022:	Added SET_AHL24 and SET_ADE24
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -15,6 +16,8 @@
 			SEGMENT .STARTUP
 							
 			XDEF	SWITCH_A
+			XDEF	SET_AHL24
+			XDEF	SET_ADE24
 			
 			XDEF	__exec16
 			XDEF	_exec16
@@ -33,6 +36,26 @@ SWITCH_A:		EX	(SP), HL		; Swap HL with the contents of the top of the stack
 			LD	L, A
 			EX	(SP), HL		; Swap this new address back, restores HL
 			RET				; Return program control to this new address			
+			
+; Set the MSB of HL (U) to A
+;
+SET_AHL24:		PUSH	HL
+			LD	HL, 2
+			ADD	HL, SP
+			LD	(HL), A
+			POP	HL
+			RET	
+
+; Set the MSB of DE (U) to A
+;
+SET_ADE24:		PUSH	HL
+			PUSH	DE
+			LD	HL, 2
+			ADD	HL, SP
+			LD	(HL), A
+			POP	DE
+			POP	HL
+			RET
 
 ; Execute a program in RAM
 ; void * _exec16(unsigned long address)
