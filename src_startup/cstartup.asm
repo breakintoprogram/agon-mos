@@ -3,13 +3,14 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	10/07/2022
+; Last Updated:	01/08/2022
 ;
 ; Modinfo:
-;
-		XDEF _errno
+; 01/08/2022:	Moved _errno to globals.asm
+
 		XDEF __c_startup
 		XDEF __cstartup
+		XREF _errno
 		XREF _main
 
 		XREF __low_bss         ; Low address of bss segment
@@ -84,13 +85,6 @@ _copy_code_to_ram_done:
 ;
 ; C environment created, continue with the initialization process
 ;
-    ret
-
-;
-; Define global system var _errno. Used by floating point libraries
-;
-		SEGMENT DATA
-
-_errno:		DS 3				; extern int _errno
+		ret
 
 		END
