@@ -29,9 +29,21 @@ NB:
 2. Numbers are in decimal and can be prefixed by '&' for hexadecimal.
 3. Addresses are 24-bit:
 	- `&000000 - &01FFFF`: MOS (Flash ROM)
-	- `&400000 - &0BDFFF`: User RAM
+	- `&040000 - &0BDFFF`: User RAM
 	- `&0BE000 - 0BFFFFF`: Global heap and stack
 4. The RUN command is incomplete - it will eventually call code in ADL mode as well. Use RET.LIS to return back to MOS 
+
+### The autoexec.txt file
+
+If the MOS detects an autoexec.txt file on the root of the SD card during cold-boot, it will read the file in, and execute the MOS commands in the file sequentially from top to bottom.
+
+For example, to automatically load and run BBC BASIC from the root folder, and change to the test folder:
+
+```
+LOAD bbcbasic &40000
+CD test
+RUN &40000
+```
 
 ### Running BBC Basic for Z80
 

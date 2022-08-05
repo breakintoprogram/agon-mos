@@ -9,10 +9,10 @@
 #### Version 0.05
 - Tweaked memory map
 	- `&000000 - &01FFFF`: MOS (Flash ROM)
-	- `&400000 - &0BDFFF`: User RAM
+	- `&040000 - &0BDFFF`: User RAM
 	- `&0BE000 - 0BFFFFF`: Global heap and stack
 - Moved some source code into new files to make the code easier to navigate
-- Added autoexec.bat feature to run MOS commands on cold boot
+- Added autoexec.txt feature to run MOS commands on cold boot
 - Added UART0 interrupt handler
 - Packet data now sent from VPD -> MOS over UART
 - Keyboard data from VPD -> MOS now includes keycode and modifiers (SHIFT, ALT, etc)
