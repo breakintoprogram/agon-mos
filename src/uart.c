@@ -2,10 +2,19 @@
  * Title:			AGON MOS - UART code
  * Author:			Dean Belfield
  * Created:			06/07/2022
- * Last Updated:	03/08/2022
+ * Last Updated:	08/08/2022
  * 
  * Modinfo:
  * 03/08/2022:		Enabled UART0 receive interrupt
+ * 08/08/2022:		Enabled UART0 CTS port
+ *
+ * NB:
+ * The UART is on Port D
+ *
+ * - 0: RX
+ * - 1: TX
+ * - 2: RTS (the CTS input of the ESP32
+ * - 3: CTS (the RTS output of the ESP32)
  */
  
 #include <stddef.h>
@@ -21,24 +30,32 @@
 #define SETREG_LCR0(data, stop, parity) (UART0_LCTL = ((BYTE)(((data)-(BYTE)5)&(BYTE)0x3)|(BYTE)((((stop)-(BYTE)0x1)&(BYTE)0x1)<<(BYTE)0x2)|(BYTE)((parity)<<(BYTE)0x3)))
 
 VOID init_UART0() {
-	PD_DR = PORTD_DRVAL_DEF ;
-	PD_DDR = PORTD_DDRVAL_DEF ;
-	#ifdef _EZ80F91
-	PD_ALT0 = PORTD_ALT0VAL_DEF ;
-	#endif
-	PD_ALT1 = PORTD_ALT1VAL_DEF ;
-	PD_ALT2 = PORTD_ALT2VAL_DEF ;
+	PD_DR = PORTD_DRVAL_DEF;
+	PD_DDR = PORTD_DDRVAL_DEF;
+//	#ifdef _EZ80F91
+//	PD_ALT0 = PORTD_ALT0VAL_DEF;
+//	#endif
+	PD_ALT1 = PORTD_ALT1VAL_DEF;
+	PD_ALT2 = PORTD_ALT2VAL_DEF;
 	return ;
 }
 
+// Open UART
+// Parameters:
+// - pUART: Structure containing the initialisation data
+//
 UCHAR open_UART0(UART *pUART) {
 	UINT16	br = MASTERCLOCK / (CLOCK_DIVISOR_16 * pUART->baudRate);//! Compute the baudrate generator value;
-	UCHAR	pins = PORTPIN_ZERO | PORTPIN_ONE;
+	UCHAR	pins = PORTPIN_ZERO | PORTPIN_ONE;						//! The transmit and receive pins
 	
-	SETREG( PD_DDR, pins ) ;										//! Set Port D bits 0, 1 for alternate function.
-	RESETREG( PD_ALT1, pins ) ;
-	SETREG( PD_ALT2, pins ) ;
-
+	SETREG(PD_DDR, pins);											//! Set Port D bits 0, 1 (TX. RX) for alternate function.
+	RESETREG(PD_ALT1, pins);
+	SETREG(PD_ALT2, pins);
+	
+	SETREG(PD_DDR, PORTPIN_THREE);									//! Set Port D bit 3 (CTS) for input
+	RESETREG(PD_ALT1, PORTPIN_THREE);
+	RESETREG(PD_ALT2, PORTPIN_THREE);
+	
 	UART0_LCTL |= UART_LCTL_DLAB ;									//! Select DLAB to access baud rate generators
 	UART0_BRG_L = (br & 0xFF) ;										//! Load divisor low
 	UART0_BRG_H = (CHAR)(( br & 0xFF00 ) >> 8) ;					//! Load divisor high
