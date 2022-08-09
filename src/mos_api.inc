@@ -2,9 +2,11 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	03/08/2022
+; Last Updated:	09/08/2022
 ;
 ; Modinfo:
+; 05/08/2022:	Added mos_feof
+; 09/08/2022:	Added cursorX and cursorY to sysvars
 
 ; MOS high level functions
 ;
@@ -20,6 +22,7 @@ mos_fopen:		EQU	08h
 mos_fclose:		EQU	09h
 mos_fgetc		EQU	0Ah
 mos_fputc		EQU	0Bh
+mos_feof		EQU	0Ch
 
 ; FatFS file access functions
 ;
@@ -82,10 +85,14 @@ fa_open_always:		EQU	10h
 fa_open_append:		EQU	30h
 	
 ; System variable indexes for api_sysvars
+; Index into _sysvars in globals.asm
 ;
 sysvar_time:		EQU	00h
-sysvar_cursorpos:	EQU	01h
-
+sysvar_keycode:		EQU	04h
+sysvar_keymods:		EQU	05h
+sysvar_cursorX:		EQU	06h
+sysvar_cursorY:		EQU	07h
+;
 ; Macro for calling the API
 ; Parameters:
 ; - function: One of the function numbers listed above
