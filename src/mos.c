@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	03/08/2022
+ * Last Updated:	05/08/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -11,6 +11,7 @@
  * 14/07/2022:		Added mos_cmdRUN
  * 25/07/2022:		Added mos_getkey; variable keycode is now declared as a volatile
  * 03/08/2022:		Added a handful of MOS API calls
+ * 05/08/2022:		Added mos_FEOF
  */
 
 #include <eZ80.h>
@@ -403,13 +404,26 @@ char	mos_FGETC(UINT8 fh) {
 	UINT	br;
 	char	c;
 
-	fr = f_read(&mosFileObjects[fh - 1].fileObject, &c, 1, &br); 
-	if(fr == FR_OK) {
-		return	c;
+	if(fh > 0 && fh <= mos_maxOpenFiles) {
+		fr = f_read(&mosFileObjects[fh - 1].fileObject, &c, 1, &br); 
+		if(fr == FR_OK) {
+			return	c;
+		}
 	}
 	return 0;
 }
 
 void	mos_FPUTC(UINT8 fh, char c) {
-	f_putc(c, &mosFileObjects[fh - 1].fileObject);
+	if(fh > 0 && fh <= mos_maxOpenFiles) {
+		f_putc(c, &mosFileObjects[fh - 1].fileObject);
+	}
+}
+
+char	mos_FEOF(UINT8 fh) {
+	if(fh > 0 && fh <= mos_maxOpenFiles) {
+		if(f_eof(&mosFileObjects[fh - 1].fileObject) != 0) {
+			return 1;
+		}
+	}
+	return 0;
 }

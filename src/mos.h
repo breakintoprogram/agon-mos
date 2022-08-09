@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	03/08/2022
+ * Last Updated:	05/08/2022
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -11,6 +11,7 @@
  * 14/07/2022:		Added mos_cmdRUN
  * 24/07/2022:		Added mos_getkey
  * 03/08/2022:		Added a handful of MOS API calls
+ * 05/08/2022:		Added mos_FEOF
  */
 
 #ifndef MOS_H
@@ -63,5 +64,7 @@ UINT24	mos_FOPEN(char * filename, UINT8 mode);
 UINT24	mos_FCLOSE(UINT8 fh);
 char	mos_FGETC(UINT8 fh);
 void	mos_FPUTC(UINT8 fh, char c);
+
+char	mos_FEOF(UINT8 fh);
 
 #endif MOS_H
