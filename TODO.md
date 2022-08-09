@@ -6,6 +6,10 @@
 ### Known Bugs / Missing Features
 - The line editor is incomplete
 ### Fixed Bugs / New Features
+#### Version 0.06
+- Enabled hardware flow control between eZ80 and VDP UARTs
+- Cursor position now fetched from MOS
+- System variables organised into a continous chunk
 #### Version 0.05
 - Tweaked memory map
 	- `&000000 - &01FFFF`: MOS (Flash ROM)
