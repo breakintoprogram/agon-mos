@@ -2,10 +2,12 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	03/08/2022
+; Last Updated:	09/08/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
+; 05/08/2022:	Added mos_FEOF, saved affected registers in fopen, fclose, fgetc, fputc and feof
+; 09/08/2022:	mos_api_sysvars now returns pointer to _sysvars
 
 			.ASSUME	ADL = 1
 			
@@ -29,9 +31,10 @@
 			XREF	_mos_FCLOSE
 			XREF	_mos_FGETC
 			XREF	_mos_FPUTC
+			XREF	_mos_FEOF
 
 			XREF	_keycode
-			XREF	_clock
+			XREF	_sysvars
 			
 ; Call a MOS API function
 ; 00h - 7Fh: Reserved for high level MOS calls
@@ -53,6 +56,7 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_fclose		; 0x09
 			DW	mos_api_fgetc		; 0x0A
 			DW	mos_api_fputc		; 0x0B
+			DW	mos_api_feof		; 0x0C
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -205,9 +209,9 @@ $$:			PUSH	HL		; char   * filename
 ; Get a pointer to a system variable
 ;   C: System variable to return
 ; Returns:
-; IXU: Pointer to system variable
+; IXU: Pointer to system variables (see mos_api.asm for more details)
 ;
-mos_api_sysvars:	LD	IX, _clock
+mos_api_sysvars:	LD	IX, _sysvars
 			RET
 			
 ; Invoke the line editor
@@ -238,7 +242,13 @@ $$:			PUSH	BC		; int 	  bufferLength
 ; Returns:
 ;   A: Filehandle, or 0 if couldn't open
 ;
-mos_api_fopen:		LD	A, MB		; Check if MBASE is 0
+mos_api_fopen:		PUSH	BC
+			PUSH	DE
+			PUSH	HL
+			PUSH	IX
+			PUSH	IY
+;
+			LD	A, MB		; Check if MBASE is 0
 			OR	A, A
 			JR	Z, $F		; If it is, we can assume HL and DE are 24 bit
 ;
@@ -254,7 +264,13 @@ $$:			LD	A, C
 			CALL	_mos_FOPEN
 			LD	A, L		; Return fh
 			POP	HL
-			POP	BC			
+			POP	BC
+;
+			POP	IY
+			POP	IX
+			POP	HL
+			POP	DE
+			POP	BC
 			RET
 
 ; Close a file
@@ -262,12 +278,24 @@ $$:			LD	A, C
 ; Returns
 ;   A: Number of files still open
 ;
-mos_api_fclose:		LD	A, C
+mos_api_fclose:		PUSH	BC
+			PUSH	DE
+			PUSH	HL
+			PUSH	IX
+			PUSH	IY
+;
+			LD	A, C
 			LD	BC, 0
 			LD	C, A
 			PUSH	BC		; byte 	  fh
 			CALL	_mos_FCLOSE
 			LD	A, L		; Return # files still open
+			POP	BC
+;
+			POP	IY
+			POP	IX
+			POP	HL
+			POP	DE
 			POP	BC
 			RET
 			
@@ -277,19 +305,38 @@ mos_api_fclose:		LD	A, C
 ;   A: Character read
 ;   F: C set if last character in file, otherwise NC
 ;
-mos_api_fgetc:		LD	DE, 0
+mos_api_fgetc:		PUSH	BC
+			PUSH	DE
+			PUSH	HL
+			PUSH	IX
+			PUSH	IY
+;			
+			LD	DE, 0
 			LD	E, C
 			PUSH	DE		; byte	  fh
 			CALL	_mos_FGETC
 			POP	BC
 			OR	A		; TODO: Need to set C if EOF
+;
+			POP	IY
+			POP	IX
+			POP	HL
+			POP	DE
+			POP	BC
 			RET
 	
 ; Write a character to a file
 ;   C: Filehandle
 ;   B: Character to write
 ;
-mos_api_fputc:		LD	DE, 0
+mos_api_fputc:		PUSH	AF
+			PUSH	BC
+			PUSH	DE
+			PUSH	HL
+			PUSH	IX
+			PUSH	IY
+;		
+			LD	DE, 0
 			LD	E, B		
 			PUSH	DE		; byte	  char
 			LD	E, C
@@ -297,9 +344,39 @@ mos_api_fputc:		LD	DE, 0
 			CALL	_mos_FPUTC
 			POP	DE
 			POP	DE
+;			
+			POP	IY
+			POP	IX
+			POP	HL
+			POP	DE
+			POP	BC
+			POP	AF
 			RET
 			
-
+; Check whether we're at the end of the file
+;   C: Filehandle
+; Returns:
+;   A: 1 if at end of file, otherwise 0
+;     
+mos_api_feof:		PUSH	BC
+			PUSH	DE
+			PUSH	HL
+			PUSH	IX
+			PUSH	IY
+;			
+			LD	DE, 0
+			LD	E, C
+			PUSH	DE		; byte	  fh
+			CALL	_mos_FEOF
+			POP	DE
+;			
+			POP	IY
+			POP	IX
+			POP	HL
+			POP	DE
+			POP	BC
+			RET
+			
 ; Commands that have not been implemented yet
 ;
 ffs_api_fopen:
