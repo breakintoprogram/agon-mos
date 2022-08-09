@@ -2,10 +2,14 @@
 ; Title:	AGON MOS - UART code
 ; Author:	Dean Belfield
 ; Created:	11/07/2022
-; Last Updated:	27/07/2022
+; Last Updated:	08/08/2022
 ;
 ; Modinfo:
 ; 27/07/2022:	Reverted serial_TX back to use RET, not RET.L and increased timeout
+; 08/08/2022:	Added check_CTS
+
+			INCLUDE	"macros.inc"
+			INCLUDE	"equs.inc"
 
 			.ASSUME	ADL = 1
 			
@@ -15,6 +19,7 @@
 			XDEF	serial_TX
 			XDEF	serial_RX
 			XDEF	serial_RX_WAIT
+			XDEF	check_CTS
 				
 PORT			EQU	%C0		; UART0
 				
@@ -38,6 +43,11 @@ UART_LSR_ERR		EQU 	%80		; Error
 UART_LSR_ETX		EQU 	%40		; Transmit empty
 UART_LSR_ETH		EQU	%20		; Transmit holding register empty
 UART_LSR_RDY		EQU	%01		; Data ready
+
+; Check whether we're clear to send
+;
+check_CTS:		GET_GPIO	PD_DR, 8	; Check Port D, bit 3 (CTS)
+			RET
 
 ; Write a character to the UART
 ; A: Data to write
