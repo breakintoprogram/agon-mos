@@ -3,7 +3,7 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	03/08/2022
+; Last Updated:	08/08/2022
 ;
 ; Modinfo:
 ; 11/07/2022:	Added RST_10 code - TX
@@ -11,6 +11,7 @@
 ; 24/07/2022:	Added RST_08 code - MOS API and moved Timer2 ISR into here from timer.c
 ; 25/07/2022:	Runs in STMIX mode
 ; 03/08/2022:	Added RST handlers, moved interrupt handlers to interrupts.asm
+; 08/08/2022:	RST_10 now calls check_CTS before sending
 
 			INCLUDE	"../src/macros.inc"
 			INCLUDE	"../src/equs.inc"
@@ -32,6 +33,7 @@
 			
 			XREF	mos_api
 			XREF	serial_TX
+			XREF	check_CTS
 
 NVECTORS 		EQU 48			; Number of interrupt vectors
 
@@ -101,7 +103,11 @@ __nvectors:		DW NVECTORS            ; extern unsigned short _num_vectors;
 _rst_08_handler:	CALL		mos_api
 			RET.L
 
-_rst_10_handler:	CALL		serial_TX
+_rst_10_handler:	PUSH		AF
+$$:			CALL		check_CTS
+			JR		NZ, $B
+			POP		AF
+			CALL		serial_TX
 			JR		NC, _rst_10_handler
 			RET.L	
 
