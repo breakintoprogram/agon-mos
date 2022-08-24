@@ -2,10 +2,11 @@
 ; Title:	AGON MOS - Miscellaneous helper functions
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	03/08/2022
+; Last Updated:	10/08/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added SET_AHL24 and SET_ADE24
+; 10/08/2022:	Optimised SET_ADE24
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -48,13 +49,13 @@ SET_AHL24:		PUSH	HL
 
 ; Set the MSB of DE (U) to A
 ;
-SET_ADE24:		PUSH	HL
-			PUSH	DE
+SET_ADE24:		EX	DE, HL
+			PUSH	HL
 			LD	HL, 2
 			ADD	HL, SP
 			LD	(HL), A
-			POP	DE
 			POP	HL
+			EX	DE, HL
 			RET
 
 ; Execute a program in RAM
