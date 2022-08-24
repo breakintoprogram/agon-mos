@@ -2,15 +2,21 @@
 ; Title:	AGON MOS - Equs
 ; Author:	Dean Belfield
 ; Created:	15/07/2022
-; Last Updated:	03/08/2022
+; Last Updated:	20/08/2022
 ;
 ; Modinfo:
 ; 24/07/2022:	Added TMR2_CTL
 ; 03/08/2022:	Added UART0_BUFFERLEN
+; 20/08/2022:	Added some VDP protocol flags
 
 ; MOS specific
 ;
 VDPP_BUFFERLEN:		EQU		16	; VDP Prtocool Buffer Length
+	
+VDPP_FLAG_CURSOR:	EQU		00000001b
+VDPP_FLAG_SCRCHAR:	EQU		00000010b
+VDPP_FLAG_POINT:	EQU		00000100b
+VDPP_FLAG_AUDIO:	EQU		00001000b	
 
 ; For GPIO
 ; PA not available on eZ80F92
