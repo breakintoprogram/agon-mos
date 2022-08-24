@@ -6,6 +6,8 @@
 ### Known Bugs / Missing Features
 - The line editor is incomplete
 ### Fixed Bugs / New Features
+#### Version 0.07
+- Added support for audio
 #### Version 0.06
 - Enabled hardware flow control between eZ80 and VDP UARTs
 - Cursor position now fetched from MOS
