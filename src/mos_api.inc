@@ -2,11 +2,12 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	09/08/2022
+; Last Updated:	18/08/2022
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
-; 09/08/2022:	Added cursorX and cursorY to sysvars
+; 09/08/2022:	Added system variables: cursorX, cursorY
+; 18/08/2022:	Added system variables: scrchar, scrpixel, audioChannel, audioSuccess, vpd_pflags
 
 ; MOS high level functions
 ;
@@ -88,10 +89,23 @@ fa_open_append:		EQU	30h
 ; Index into _sysvars in globals.asm
 ;
 sysvar_time:		EQU	00h
-sysvar_keycode:		EQU	04h
-sysvar_keymods:		EQU	05h
-sysvar_cursorX:		EQU	06h
-sysvar_cursorY:		EQU	07h
+sysvar_vpd_pflags:	EQU	04h
+sysvar_keycode:		EQU	05h
+sysvar_keymods:		EQU	06h
+sysvar_cursorX:		EQU	07h
+sysvar_cursorY:		EQU	08h
+sysvar_scrchar:		EQU	09h
+sysvar_scrpixel:	EQU	0Ah
+sysvar_audioChannel:	EQU	0Dh
+syscar_audioSuccess:	EQU	0Eh
+	
+; Flags for the VPD protocol
+;
+vdp_pflag_cursor:	EQU		00000001b
+vdp_pflag_scrchar:	EQU		00000010b
+vdp_pflag_point:	EQU		00000100b
+vdp_pflag_audio:	EQU		00001000b
+	
 ;
 ; Macro for calling the API
 ; Parameters:
