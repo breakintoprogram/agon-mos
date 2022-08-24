@@ -2,15 +2,16 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	05/08/2022
+ * Last Updated:	10/08/2022
  *
  * Modinfo:
- * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
+ * 11/07/2022:		Version 0.01: Tw	eaks for Agon Light, Command Line code added
  * 13/07/2022:		Version 0.02
  * 15/07/2022:		Version 0.03: Warm boot support, VBLANK interrupt
  * 25/07/2022:		Version 0.04; Tweaks to initialisation and interrupts
  * 03/08/2022:		Version 0.05: Extended MOS for BBC Basic, added config file
- * 05/08/2022:		Version 0.06
+ * 05/08/2022:		Version 0.06: Interim release with hardware flow control enabled
+ * 10/08/2022:		Version 0.07: Bug fixes
  */
 
 #include <eZ80.h>
@@ -26,7 +27,7 @@
 #include "mos.h"
 
 #define		MOS_version		0
-#define		MOS_revision 	6
+#define		MOS_revision 	7
 
 #define		enable_config	1		// 0 = disable config loading, 1 = enable
 
