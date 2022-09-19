@@ -4,25 +4,26 @@
 <!-- file information -->
 <files>
 <file filter-key="">.\main.c</file>
+<file filter-key="">src_startup\globals.asm</file>
+<file filter-key="">src\mos.c</file>
+<file filter-key="">src\mos_editor.c</file>
+<file filter-key="">src\mos_api.asm</file>
+<file filter-key="">src\misc.asm</file>
+<file filter-key="">src\vdp_protocol.asm</file>
+<file filter-key="">src\interrupts.asm</file>
+<file filter-key="">src\timer.c</file>
 <file filter-key="">src\sd.c</file>
 <file filter-key="">src\spi.c</file>
-<file filter-key="">src\timer.c</file>
 <file filter-key="">src_fatfs\diskio.c</file>
 <file filter-key="">src_fatfs\ff.c</file>
 <file filter-key="">src_fatfs\ffsystem.c</file>
 <file filter-key="">src_fatfs\ffunicode.c</file>
 <file filter-key="">src\uart.c</file>
-<file filter-key="">src_startup\cstartup.asm</file>
-<file filter-key="">src_startup\init_params_f92.asm</file>
-<file filter-key="">src\mos.c</file>
 <file filter-key="">src\serial.asm</file>
 <file filter-key="">src\gpio.asm</file>
-<file filter-key="">src\mos_api.asm</file>
-<file filter-key="">src\misc.asm</file>
+<file filter-key="">src_startup\cstartup.asm</file>
+<file filter-key="">src_startup\init_params_f92.asm</file>
 <file filter-key="">src_startup\vectors16.asm</file>
-<file filter-key="">src_startup\globals.asm</file>
-<file filter-key="">src\vdp_protocol.asm</file>
-<file filter-key="">src\interrupts.asm</file>
 </files>
 
 <!-- configuration information -->

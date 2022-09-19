@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	10/08/2022
+ * Last Updated:	05/09/2022
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tw	eaks for Agon Light, Command Line code added
@@ -12,6 +12,7 @@
  * 03/08/2022:		Version 0.05: Extended MOS for BBC Basic, added config file
  * 05/08/2022:		Version 0.06: Interim release with hardware flow control enabled
  * 10/08/2022:		Version 0.07: Bug fixes
+ * 05/09/2022:		Version 0.08: Minor updates to MOS
  */
 
 #include <eZ80.h>
@@ -20,6 +21,7 @@
 #include <CTYPE.h>
 #include <String.h>
 
+#include "config.h"
 #include "uart.h"
 #include "spi.h"
 #include "timer.h"
@@ -27,9 +29,7 @@
 #include "mos.h"
 
 #define		MOS_version		0
-#define		MOS_revision 	7
-
-#define		enable_config	1		// 0 = disable config loading, 1 = enable
+#define		MOS_revision 	8
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -62,26 +62,6 @@ void init_interrupts(void) {
 	set_vector(UART0_IVECT, uart0_handler);		// 0x18
 }
 
-// Load and run the config file 
-//
-UINT24 load_config(char * filename) {
-	FRESULT	fr;
-	FIL	   	fil;
-	UINT   	br;	
-	void * 	dest;
-	FSIZE_t fSize;
-	
-	fr = f_open(&fil, filename, FA_READ);
-	if(fr == FR_OK) {
-		while(!f_eof(&fil)) {
-			f_gets(&cmd, sizeof(cmd), &fil);
-			mos_exec(&cmd, sizeof(cmd));
-		}
-	}
-	f_close(&fil);	
-	return fr;	
-}
-
 // The main loop
 //
 int main(void) {
@@ -92,29 +72,28 @@ int main(void) {
 	pUART.stopBits = 1;
 	pUART.parity = PAR_NOPARITY;
 
-	DI();									// Ensure interrupts are disabled before we do anything
-	init_interrupts();						// Initialise the interrupt vectors
-	init_timer2(1);							// Initialise Timer 2 @ 1ms interval
-	init_spi();								// Initialise SPI comms for the SD card interface
-	init_UART0();							// Initialise UART0 for the ESP32 interface
-	open_UART0(&pUART);						// Open the UART 
-	if(coldBoot > 0) {						// If a cold boot has been detected
-		wait_ESP32();						// Wait for the ESP32 to finish its bootup
+	DI();											// Ensure interrupts are disabled before we do anything
+	init_interrupts();								// Initialise the interrupt vectors
+	init_timer2(1);									// Initialise Timer 2 @ 1ms interval
+	init_spi();										// Initialise SPI comms for the SD card interface
+	init_UART0();									// Initialise UART0 for the ESP32 interface
+	open_UART0(&pUART);								// Open the UART 
+	if(coldBoot > 0) {								// If a cold boot has been detected
+		wait_ESP32();								// Wait for the ESP32 to finish its bootup
 	}
-	else {									// Otherwise warm boot,
-		putch(12);							// Clear the screen
+	else {											// Otherwise warm boot,
+		putch(12);									// Clear the screen
 	}
 	printf("AGON MOS Version %d.%02d\n\r\n\r", MOS_version, MOS_revision);	
-	EI();									// Enable the interrupts now
+	EI();											// Enable the interrupts now
 
-
-	f_mount(&fs, "", 1);					// Mount the SD card
+	f_mount(&fs, "", 1);							// Mount the SD card
 
 	// Load the autoexec.bat config file
 	//
 	#if enable_config == 1	
-	if(coldBoot > 0) {						// Check it's a cold boot (after reset, not RST 00h)
-		load_config("autoexec.txt");	// Then load and run the config file
+	if(coldBoot > 0) {								// Check it's a cold boot (after reset, not RST 00h)
+		mos_BOOT("autoexec.txt", cmd, sizeof cmd);	// Then load and run the config file
 	}	
 	#endif
 	

@@ -1,11 +1,15 @@
 # TODO
 ### Next Jobs
 - The RUN command: modify to load file in and run either in Z80 or ADL mode
-- Finish enough of the MOS API so that BBC BASIC can be completed
+- Add code to run external * commands from SD card
 - Add upgrade functionality so that the MOS can be updated from SD card
-### Known Bugs / Missing Features
-- The line editor is incomplete
 ### Fixed Bugs / New Features
+#### Version 0.08
+- Improved the line editor
+- Added MOS API command `REN`: Rename a file on the SD card
+- Completed enough of the MOS API so that BBC BASIC can run
+- Added default address for LOAD and RUN commands
+- Added function level comments
 #### Version 0.07
 - Added support for audio
 #### Version 0.06
