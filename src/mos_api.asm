@@ -2,12 +2,13 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	09/08/2022
+; Last Updated:	05/09/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
 ; 05/08/2022:	Added mos_FEOF, saved affected registers in fopen, fclose, fgetc, fputc and feof
 ; 09/08/2022:	mos_api_sysvars now returns pointer to _sysvars
+; 05/09/2022:	Added mos_REN
 
 			.ASSUME	ADL = 1
 			
@@ -27,6 +28,7 @@
 			XREF	_mos_CD
 			XREF	_mos_DIR
 			XREF	_mos_DEL
+			XREF	_mos_REN
 			XREF	_mos_FOPEN
 			XREF	_mos_FCLOSE
 			XREF	_mos_FGETC
@@ -50,13 +52,14 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_cd		; 0x03
 			DW	mos_api_dir		; 0x04
 			DW	mos_api_del		; 0x05
-			DW	mos_api_sysvars		; 0x06
-			DW	mos_api_editline	; 0x07
-			DW	mos_api_fopen		; 0x08
-			DW	mos_api_fclose		; 0x09
-			DW	mos_api_fgetc		; 0x0A
-			DW	mos_api_fputc		; 0x0B
-			DW	mos_api_feof		; 0x0C
+			DW	mos_api_ren		; 0x06
+			DW	mos_api_sysvars		; 0x07
+			DW	mos_api_editline	; 0x08
+			DW	mos_api_fopen		; 0x09
+			DW	mos_api_fclose		; 0x0A
+			DW	mos_api_fgetc		; 0x0B
+			DW	mos_api_fputc		; 0x0C
+			DW	mos_api_feof		; 0x0D
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -204,7 +207,29 @@ $$:			PUSH	HL		; char   * filename
 			POP	HL
 			SCF			; Flag as successful
 			RET
-	
+
+; Rename a file on the SD card
+; HLU: Address of filename1 (zero terminated)
+; DEU: Address of filename2 (zero terminated)
+;
+mos_api_ren:		LD	A, MB		; Check if MBASE is 0
+			OR	A, A
+			JR	Z, $F		; If it is, we can assume HL and DE are 24 bit
+;
+; Now we need to mod HLU and DEu to include the MBASE in the U byte
+; 
+			CALL	SET_AHL24
+			CALL	SET_ADE24
+;
+; Finally we can do the rename
+; 
+$$:			PUSH	DE		; char * filename2
+			PUSH	HL		; char * filename1
+			CALL	_mos_REN	; Call the C function mos_REN
+			POP	HL
+			POP	DE
+			SCF			; Flag as successful
+			RET
 
 ; Get a pointer to a system variable
 ;   C: System variable to return
