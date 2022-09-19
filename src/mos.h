@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	05/08/2022
+ * Last Updated:	05/09/2022
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -12,16 +12,13 @@
  * 24/07/2022:		Added mos_getkey
  * 03/08/2022:		Added a handful of MOS API calls
  * 05/08/2022:		Added mos_FEOF
+ * 05/09/2022:		Added mos_cmdREN, mos_cmdBOOT; moved mos_EDITLINE into mos_editline.c
  */
 
 #ifndef MOS_H
 #define MOS_H
 
 #include "ff.h"
-
-#define MOS_prompt '*'
-
-#define mos_maxOpenFiles 8
 
 typedef struct {
 	char * name;
@@ -50,15 +47,15 @@ int		mos_cmdDEL(char * ptr);
 int		mos_cmdJMP(char * ptr);
 int		mos_cmdRUN(char * ptr);
 int		mos_cmdCD(char * ptr);
-
-
-UINT24	mos_EDITLINE(char * filename, int bufferLength);
+int		mos_cmdREN(char *ptr);
 
 UINT24	mos_LOAD(char * filename, INT24 address, INT24 size);
 UINT24	mos_SAVE(char * filename, INT24 address, INT24 size);
 UINT24	mos_CD(char * path);
 UINT24	mos_DIR(void);
 UINT24	mos_DEL(char * filename);
+UINT24 	mos_REN(char * filename1, char * filename2);
+UINT24 	mos_BOOT(char * filename, char * buffer, INT24 size);
 
 UINT24	mos_FOPEN(char * filename, UINT8 mode);
 UINT24	mos_FCLOSE(UINT8 fh);

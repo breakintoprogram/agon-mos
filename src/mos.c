@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	05/08/2022
+ * Last Updated:	05/09/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -12,6 +12,7 @@
  * 25/07/2022:		Added mos_getkey; variable keycode is now declared as a volatile
  * 03/08/2022:		Added a handful of MOS API calls
  * 05/08/2022:		Added mos_FEOF
+ * 05/09/2022:		Added mos_cmdREN, mos_cmdBOOT; moved mos_EDITLINE into mos_editline.c, default args for LOAD and RUN commands
  */
 
 #include <eZ80.h>
@@ -21,6 +22,8 @@
 #include <string.h>
 
 #include "mos.h"
+#include "config.h"
+#include "mos_editor.h"
 #include "uart.h"
 #include "ff.h"
 
@@ -28,8 +31,10 @@ extern void exec16(long addr);
 
 extern volatile char keycode;
 
-t_mosFileObject	mosFileObjects[mos_maxOpenFiles];
+t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 
+// Array of MOS commands and pointer to the C function to run
+//
 static t_mosCommand mosCommands[] = {
 	{ ".", 		&mos_cmdDIR },
 	{ "DIR",	&mos_cmdDIR },
@@ -40,10 +45,13 @@ static t_mosCommand mosCommands[] = {
 	{ "JMP",	&mos_cmdJMP },
 	{ "RUN", 	&mos_cmdRUN },
 	{ "CD", 	&mos_cmdCD },
+	{ "REN", 	&mos_cmdREN },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
 
+// Array of file errors; mapped by index to the error numbers returned by FatFS
+//
 static char * mos_fileErrors[] = {
 	"OK",
 	"Error accessing SD card",
@@ -67,20 +75,34 @@ static char * mos_fileErrors[] = {
 	"Invalid parameter"
 };
 
+// Output a file error with MOS prompt
+// Parameters:
+// - error: The FatFS error number
+//
 void mos_fileError(int error) {
 	printf("%c%s\n\r", MOS_prompt, mos_fileErrors[error]);
 }
 
+// Wait for a keycode character from the VPD
+// Returns:
+// - ASCII keycode
+//
 char mos_getkey() {
 	char ch = 0;
-	while(ch == 0) {
-		ch = keycode;
+	while(ch == 0) {		// Loop whilst no key pressed
+		ch = keycode;		// Variable keycode is updated by interrupt
 	}
-//	while(keycode != 0);
-	keycode = 0;
+	keycode = 0;			// Reset keycode to debounce the key
 	return ch;
 }
 
+// Call the line editor from MOS
+// Parameters:
+// - buffer: Pointer to the line edit buffer
+// - bufferLength: Size of the line edit buffer in bytes
+// Returns:
+// - The keycode (ESC or CR)
+//
 UINT24 mos_input(char * buffer, int bufferLength) {
 	INT24 retval;
 	putch(MOS_prompt);
@@ -89,6 +111,12 @@ UINT24 mos_input(char * buffer, int bufferLength) {
 	return retval;
 }
 
+// Parse a MOS command from the line edit buffer
+// Parameters:
+// - ptr: Pointer to the MOS command in the line edit buffer
+// Returns:
+// - Function pointer, or 0 if command not found
+//
 void * mos_getCommand(char * ptr) {
 	int	   i;
 	t_mosCommand * cmd;	
@@ -101,6 +129,13 @@ void * mos_getCommand(char * ptr) {
 	return 0;
 }
 
+// Parse a number from the line edit buffer
+// Parameters:
+// - ptr: Pointer to the number in the line edit buffer
+// - p_Value: Pointer to the return value
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 BOOL mos_parseNumber(char * ptr, UINT24 * p_Value) {
 	char * 	p = ptr;
 	char * 	e;
@@ -123,6 +158,13 @@ BOOL mos_parseNumber(char * ptr, UINT24 * p_Value) {
 	return 1;
 }
 
+// Parse a string from the line edit buffer
+// Parameters:
+// - ptr: Pointer to the string in the line edit buffer
+// - p_Value: Pointer to the return value
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 BOOL mos_parseString(char * ptr, char ** p_Value) {
 	char *	p = ptr;
 
@@ -134,6 +176,11 @@ BOOL mos_parseString(char * ptr, char ** p_Value) {
 	return 1;
 }
 
+// Execute a MOS command
+// Parameters:
+// - buffer: Pointer to a zero terminated string that contains the MOS command with arguments
+// - bufferLength: Size of buffer in bytes
+//
 void mos_exec(char * buffer, int bufferLength) {
 	char * 	ptr;
 	int 	status;
@@ -154,6 +201,12 @@ void mos_exec(char * buffer, int bufferLength) {
 	}
 }
 
+// DIR command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 int mos_cmdDIR(char * ptr) {	
 	FRESULT	fr;
 	
@@ -162,22 +215,34 @@ int mos_cmdDIR(char * ptr) {
 	return 0;
 }
 
+// LOAD <filename> <addr> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 int mos_cmdLOAD(char * ptr) {
 	FRESULT	fr;
 	char *  filename;
 	UINT24 	addr;
 	
 	if(
-		!mos_parseString(NULL, &filename) ||
-		!mos_parseNumber(NULL, &addr)
+		!mos_parseString(NULL, &filename)
 	) {
 		return 1;
 	}
+	if(!mos_parseNumber(NULL, &addr)) addr = MOS_defaultLoadAddress;
 	fr = mos_LOAD(filename, addr, 0);
 	mos_fileError(fr);
 	return 0;	
 }
 
+// SAVE <filename> <addr> <len> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 int mos_cmdSAVE(char * ptr) {
 	FRESULT	fr;
 	char *  filename;
@@ -196,6 +261,12 @@ int mos_cmdSAVE(char * ptr) {
 	return 0;
 }
 
+// DEL <filename> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 int mos_cmdDEL(char * ptr) {
 	char *  filename;
 	
@@ -211,6 +282,12 @@ int mos_cmdDEL(char * ptr) {
 	return 0;
 }
 
+// JMP <addr> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 int mos_cmdJMP(char *ptr) {
 	UINT24 	addr;
 	void (* dest)(void) = 0;
@@ -222,16 +299,26 @@ int mos_cmdJMP(char *ptr) {
 	return 0;
 }
 
+// RUN <addr> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 int mos_cmdRUN(char *ptr) {
 	UINT24 	addr;
 	void (* dest)(void) = 0;
-	if(!mos_parseNumber(NULL, &addr)) {
-		return 1;
-	};
+	if(!mos_parseNumber(NULL, &addr)) addr = MOS_defaultLoadAddress;
 	exec16(addr);
 	return 0;
 }
 
+// CD <path> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
 int mos_cmdCD(char * ptr) {
 	char *  path;
 	
@@ -247,37 +334,36 @@ int mos_cmdCD(char * ptr) {
 	return 0;
 }
 
-UINT24 mos_EDITLINE(char * buffer, int bufferLength) {
-	char ch = 0;
-	int index = 0;
-	int limit = bufferLength - 1;
+// REN <filename1> <filename2> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
+int mos_cmdREN(char *ptr) {
+	FRESULT	fr;
+	char *  filename1;
+	char *	filename2;
 	
-	while(ch != 13 && ch != 27) {
-		ch = mos_getkey();
-		if(ch > 0) {
-			if(ch >= 32 && ch <= 126) {
-				if(index < limit) {
-					putch(ch);
-					buffer[index] = ch;
-					index++;
-				}
-			}
-			else {				
-				switch(ch) {
-					case 127:	// Backspace
-						if(index > 0) {
-							putch(ch);
-							buffer[index--] = 0;							
-						}
-						break;
-				}					
-			}
-		}		
+	if(
+		!mos_parseString(NULL, &filename1) ||
+		!mos_parseString(NULL, &filename2)
+	) {
+		return 1;
 	}
-	buffer[index] = 0x00;
-	return ch;
+	fr = mos_REN(filename1, filename2);
+	mos_fileError(fr);
+	return 0;
 }
 
+// Load a file from SD card to memory
+// Parameters:
+// - filename: Path of file to load
+// - address: Address in RAM to load the file into
+// - size: Number of bytes to load
+// Returns:
+// - FatFS return code
+// 
 UINT24 mos_LOAD(char * filename, INT24 address, INT24 size) {
 	FRESULT	fr;
 	FIL	   	fil;
@@ -294,6 +380,14 @@ UINT24 mos_LOAD(char * filename, INT24 address, INT24 size) {
 	return fr;
 }
 
+// Save a file from memory to SD card
+// Parameters:
+// - filename: Path of file to save
+// - address: Address in RAM to save the file from
+// - size: Number of bytes to save
+// Returns:
+// - FatFS return code
+// 
 UINT24	mos_SAVE(char * filename, INT24 address, INT24 size) {
 	FRESULT	fr;
 	FIL	   	fil;
@@ -307,6 +401,12 @@ UINT24	mos_SAVE(char * filename, INT24 address, INT24 size) {
 	return fr;
 }
 
+// Change directory
+// Parameters:
+// - filename: Path of file to save
+// Returns:
+// - FatFS return code
+// 
 UINT24	mos_CD(char *path) {
 	FRESULT	fr;
 
@@ -314,6 +414,10 @@ UINT24	mos_CD(char *path) {
 	return fr;
 }
 
+// Directory listing
+// Returns:
+// - FatFS return code
+// 
 UINT24	mos_DIR(void) {
 	FRESULT	fr;
 	DIR	  	dir;
@@ -354,6 +458,12 @@ UINT24	mos_DIR(void) {
 	return fr;
 }
 
+// Delete file
+// Parameters:
+// - filename: Path of file to delete
+// Returns:
+// - FatFS return code
+// 
 UINT24 mos_DEL(char * filename) {
 	FRESULT	fr;	
 	
@@ -361,11 +471,58 @@ UINT24 mos_DEL(char * filename) {
 	return fr;
 }
 
+// Rename file
+// Parameters:
+// - filename1: Path of file to rename
+// - filename2: New filename
+// Returns:
+// - FatFS return code
+// 
+UINT24 mos_REN(char * filename1, char * filename2) {
+	FRESULT fr;
+	
+	fr = f_rename(filename1, filename2);
+	return fr;
+}
+
+// Load and run the config file 
+// Parameters:
+// - filename: The config file to execute
+// - buffer: Storage for each line to be loaded into and executed from (recommend 256 bytes)
+// - size: Size of buffer (in bytes)
+// Returns:
+// - FatFS return code
+//
+UINT24 mos_BOOT(char * filename, char * buffer, INT24 size) {
+	FRESULT	fr;
+	FIL	   	fil;
+	UINT   	br;	
+	void * 	dest;
+	FSIZE_t fSize;
+	
+	fr = f_open(&fil, filename, FA_READ);
+	if(fr == FR_OK) {
+		while(!f_eof(&fil)) {
+			f_gets(buffer, size, &fil);
+			mos_exec(buffer, size);
+		}
+	}
+	f_close(&fil);	
+	return fr;	
+}
+
+// Open a file
+// Parameters:
+// - filename: Path of file to open
+// - mode: File open mode (r, r/w, w, etc) - see FatFS documentation for more details
+// Returns:
+// - File handle, or 0 if the file cannot be opened
+// 
 UINT24 mos_FOPEN(char * filename, UINT8 mode) {
 	FRESULT fr;
 	int		i;
 	
-	for(i = 0; i < mos_maxOpenFiles; i++) {
+	for(i = 0; i < MOS_maxOpenFiles; i++) {
 		if(mosFileObjects[i].free == 0) {
 			fr = f_open(&mosFileObjects[i].fileObject, filename, mode);
 			if(fr == FR_OK) {
@@ -377,11 +534,17 @@ UINT24 mos_FOPEN(char * filename, UINT8 mode) {
 	return 0;
 }
 
+// Close file(s)
+// Parameters:
+// - fh: File handle, or 0 to close all open files
+// Returns:
+// - File handle passed in function args
+//
 UINT24 mos_FCLOSE(UINT8 fh) {
 	FRESULT fr;
 	int 	i;
 	
-	if(fh > 0 && fh <= mos_maxOpenFiles) {
+	if(fh > 0 && fh <= MOS_maxOpenFiles) {
 		i = fh - 1;
 		if(&mosFileObjects[i].free > 0) {
 			fr = f_close(&mosFileObjects[i].fileObject);
@@ -389,7 +552,7 @@ UINT24 mos_FCLOSE(UINT8 fh) {
 		}
 	}
 	else {
-		for(i = 0; i < mos_maxOpenFiles; i++) {
+		for(i = 0; i < MOS_maxOpenFiles; i++) {
 			if(mosFileObjects[i].free > 0) {
 				fr = f_close(&mosFileObjects[i].fileObject);
 				mosFileObjects[i].free = 0;
@@ -399,12 +562,18 @@ UINT24 mos_FCLOSE(UINT8 fh) {
 	return fh;	
 }
 
+// Read a byte from a file
+// Parameters:
+// - fh: File handle
+// Returns:
+// - Byte read
+//
 char	mos_FGETC(UINT8 fh) {
 	FRESULT fr;
 	UINT	br;
 	char	c;
 
-	if(fh > 0 && fh <= mos_maxOpenFiles) {
+	if(fh > 0 && fh <= MOS_maxOpenFiles) {
 		fr = f_read(&mosFileObjects[fh - 1].fileObject, &c, 1, &br); 
 		if(fr == FR_OK) {
 			return	c;
@@ -413,14 +582,25 @@ char	mos_FGETC(UINT8 fh) {
 	return 0;
 }
 
+// Write a byte to a file
+// Parameters:
+// - fh: File handle
+// - c: Byte to write
+//
 void	mos_FPUTC(UINT8 fh, char c) {
-	if(fh > 0 && fh <= mos_maxOpenFiles) {
+	if(fh > 0 && fh <= MOS_maxOpenFiles) {
 		f_putc(c, &mosFileObjects[fh - 1].fileObject);
 	}
 }
 
+// Check whether file is at EOF (end of file)
+// Parameters:
+// - fh: File handle
+// Returns:
+// - 1 if EOF, otherwise 0
+//
 char	mos_FEOF(UINT8 fh) {
-	if(fh > 0 && fh <= mos_maxOpenFiles) {
+	if(fh > 0 && fh <= MOS_maxOpenFiles) {
 		if(f_eof(&mosFileObjects[fh - 1].fileObject) != 0) {
 			return 1;
 		}
