@@ -2,11 +2,12 @@
 ; Title:	AGON MOS - Globals
 ; Author:	Dean Belfield
 ; Created:	01/08/2022
-; Last Updated:	18/08/2022
+; Last Updated:	18/09/2022
 ;
 ; Modinfo:
 ; 09/08/2022:	Added sysvars structure, cursorX, cursorY
 ; 18/08/2022:	Added scrchar, scrpixel, audioChannel, audioSuccess, vdp_protocol_flags
+; 18/09/2022:	Added scrwidth, scrheight, scrcols, scrrows
 
 			INCLUDE	"../src/equs.inc"
 			
@@ -21,7 +22,10 @@
 			XDEF	_scrpixel
 			XDEF	_audioChannel
 			XDEF	_audioSuccess
-
+			XDEF	_scrwidth
+			XDEF	_scrheight
+			XDEF	_scrcols
+			XDEF	_scrrows
 
 			XDEF	_errno
 			XDEF 	_coldBoot
@@ -49,6 +53,10 @@ _scrchar		DS	1		; + 09h: Character read from screen
 _scrpixel:		DS	3		; + 0Ah: Pixel data read from screen (R,B,G)
 _audioChannel:		DS	1		; + 0Dh: Audio channel 
 _audioSuccess:		DS	1		; + 0Eh: Audio channel note queued (0 = no, 1 = yes)
+_scrwidth:		DS	2		; + 0Fh: Screen width in pixels
+_scrheight:		DS	2		; + 11h: Screen height in pixels
+_scrcols:		DS	1		; + 12h: Screen columns in characters
+_scrrows:		DS	1		; + 13h: Screen rows in characters
 
 _errno:			DS 	3		; extern int _errno
 _coldBoot:		DS	1		; extern char _coldBoot
