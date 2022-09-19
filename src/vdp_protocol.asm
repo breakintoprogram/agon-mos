@@ -2,11 +2,12 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	18/08/2022
+; Last Updated:	18/09/2022
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
 ; 18/08/2022:	Added vpd_protocol_SCRCHAR, vpd_protocol_POINT, vdp_protocol_AUDIO, bounds checking for protocol
+; 18/09/2022:	Added vdp_protocol_MODE
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -26,6 +27,10 @@
 			XREF	_scrpixel
 			XREF	_audioChannel
 			XREF	_audioSuccess
+			XREF	_scrwidth
+			XREF	_scrheight
+			XREF	_scrcols
+			XREF	_scrrows
 			XREF	_vpd_protocol_flags
 			XREF	_vdp_protocol_state
 			XREF	_vdp_protocol_cmd
@@ -112,6 +117,7 @@ vdp_protocol_vector:	JP	vdp_protocol_GP
 			JP	vpd_protocol_SCRCHAR
 			JP	vdp_protocol_POINT
 			JP	vdp_protocol_AUDIO
+			JP	vdp_protocol_MODE
 ;
 vdp_protocol_vesize:	EQU	($-vdp_protocol_vector)/4
 	
@@ -137,6 +143,11 @@ vdp_protocol_KEY:	LD		A, (_vdp_protocol_data + 1)
 ; Cursor data
 ; Received after the cursor position is updated in the VPD
 ;
+; Byte: Cursor X
+; Byte: Cursor Y
+;
+; Sets vpd_protocol_flags to flag receipt to apps
+;
 vdp_protocol_CURSOR:	LD		A, (_vdp_protocol_data+0)
 			LD		(_cursorX), A
 			LD		A, (_vdp_protocol_data+1)
@@ -149,6 +160,10 @@ vdp_protocol_CURSOR:	LD		A, (_vdp_protocol_data+0)
 ; Screen character data
 ; Received after VDU 23,0,0,x;y;
 ;
+; Byte: ASCII code of character 
+;
+; Sets vpd_protocol_flags to flag receipt to apps
+;
 vpd_protocol_SCRCHAR:	LD		A, (_vdp_protocol_data+0)
 			LD		(_scrchar), A
 			LD		A, (_vpd_protocol_flags)
@@ -158,6 +173,12 @@ vpd_protocol_SCRCHAR:	LD		A, (_vdp_protocol_data+0)
 			
 ; Pixel value data (RGB)
 ; Received after VDU 23,0,1,x;y;
+;
+; Byte: Red component of read pixel
+; Byte: Green component of read pixel
+; Byte: Blue component of read pixel
+;
+; Sets vpd_protocol_flags to flag receipt to apps
 ;
 vdp_protocol_POINT:	LD		HL, (_vdp_protocol_data+0)
 			LD		(_scrpixel), HL
@@ -169,6 +190,11 @@ vdp_protocol_POINT:	LD		HL, (_vdp_protocol_data+0)
 ; Audio acknowledgement
 ; Received after VDU 23,0,5,channel,volume,frequency,duration
 ;
+; Byte: channel
+; Byte: success (1 if successful, otherwise 0)
+;
+; Sets vpd_protocol_flags to flag receipt to apps
+;
 vdp_protocol_AUDIO:	LD		A, (_vdp_protocol_data+0)
 			LD		(_audioChannel), A
 			LD		A, (_vdp_protocol_data+1)
@@ -176,4 +202,31 @@ vdp_protocol_AUDIO:	LD		A, (_vdp_protocol_data+0)
 			LD		A, (_vpd_protocol_flags)
 			OR		VDPP_FLAG_AUDIO
 			LD		(_vpd_protocol_flags), A
+			RET
+			
+; Screen mode details
+; Received after VDU 23,0,6
+;
+; Word: Screen width in pixels
+; Word: Screen height in pixels
+; Byte: Screen width in characters
+; Byte: Screen height in characters
+;
+; Sets vpd_protocol_flags to flag receipt to apps
+;
+vdp_protocol_MODE:	LD		A, (_vdp_protocol_data+0)
+			LD		(_scrwidth), A
+			LD		A, (_vdp_protocol_data+1)
+			LD		(_scrwidth+1), A
+			LD		HL, (_vdp_protocol_data+2)
+			LD		(_scrheight), A
+			LD		HL, (_vdp_protocol_data+3)
+			LD		(_scrheight+1), A
+			LD		A, (_vdp_protocol_data+4)
+			LD		(_scrcols), A
+			LD		A, (_vdp_protocol_data+5)
+			LD		(_scrrows), A
+			LD		A, (_vpd_protocol_flags)
+			OR		VDPP_FLAG_MODE
+			LD		(_vpd_protocol_flags), A			
 			RET
