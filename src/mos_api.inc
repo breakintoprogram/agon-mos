@@ -2,12 +2,13 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	18/08/2022
+; Last Updated:	05/09/2022
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
 ; 09/08/2022:	Added system variables: cursorX, cursorY
 ; 18/08/2022:	Added system variables: scrchar, scrpixel, audioChannel, audioSuccess, vpd_pflags
+; 05/09/2022:	Added mos_ren, vdp_pflag_mode
 
 ; MOS high level functions
 ;
@@ -17,13 +18,14 @@ mos_save:		EQU	02h
 mos_cd:			EQU	03h
 mos_dir:		EQU	04h
 mos_del:		EQU	05h
-mos_sysvars:		EQU	06h
-mos_editline::		EQU	07h
-mos_fopen:		EQU	08h
-mos_fclose:		EQU	09h
-mos_fgetc		EQU	0Ah
-mos_fputc		EQU	0Bh
-mos_feof		EQU	0Ch
+mos_ren:		EQU	06h
+mos_sysvars:		EQU	07h
+mos_editline::		EQU	08h
+mos_fopen:		EQU	09h
+mos_fclose:		EQU	0Ah
+mos_fgetc		EQU	0Bh
+mos_fputc		EQU	0Ch
+mos_feof		EQU	0Dh
 
 ; FatFS file access functions
 ;
@@ -105,6 +107,7 @@ vdp_pflag_cursor:	EQU		00000001b
 vdp_pflag_scrchar:	EQU		00000010b
 vdp_pflag_point:	EQU		00000100b
 vdp_pflag_audio:	EQU		00001000b
+vdp_pflag_mode:		EQU		00010000b
 	
 ;
 ; Macro for calling the API
