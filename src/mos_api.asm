@@ -2,13 +2,14 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	05/09/2022
+; Last Updated:	24/09/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
 ; 05/08/2022:	Added mos_FEOF, saved affected registers in fopen, fclose, fgetc, fputc and feof
 ; 09/08/2022:	mos_api_sysvars now returns pointer to _sysvars
 ; 05/09/2022:	Added mos_REN
+; 24/09/2022:	Error codes returned for MOS commands
 
 			.ASSUME	ADL = 1
 			
@@ -34,6 +35,8 @@
 			XREF	_mos_FGETC
 			XREF	_mos_FPUTC
 			XREF	_mos_FEOF
+			XREF	_mos_GETERROR
+			XREF	_mos_MKDIR
 
 			XREF	_keycode
 			XREF	_sysvars
@@ -53,13 +56,15 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_dir		; 0x04
 			DW	mos_api_del		; 0x05
 			DW	mos_api_ren		; 0x06
-			DW	mos_api_sysvars		; 0x07
-			DW	mos_api_editline	; 0x08
-			DW	mos_api_fopen		; 0x09
-			DW	mos_api_fclose		; 0x0A
-			DW	mos_api_fgetc		; 0x0B
-			DW	mos_api_fputc		; 0x0C
-			DW	mos_api_feof		; 0x0D
+			DW	mos_api_mkdir		; 0x07
+			DW	mos_api_sysvars		; 0x08
+			DW	mos_api_editline	; 0x09
+			DW	mos_api_fopen		; 0x0A
+			DW	mos_api_fclose		; 0x0B
+			DW	mos_api_fgetc		; 0x0C
+			DW	mos_api_fputc		; 0x0D
+			DW	mos_api_feof		; 0x0E
+			DW	mos_api_getError	; 0x0F
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -112,13 +117,14 @@ mos_api_getkey:		LD	A, (_keycode)
 			LD	(_keycode), A
 			POP	AF
 			RET
-
+			
 ; Load an area of memory from a file.
 ; HLU: Address of filename (zero terminated)
 ; DEU: Address at which to load
 ; BCU: Maximum allowed size (bytes)
 ; Returns:
-; - Carry reset indicates no room for file.
+; - A: File error, or 0 if OK
+; - F: Carry reset indicates no room for file.
 ;
 mos_api_load:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A
@@ -135,6 +141,7 @@ $$:			PUSH	BC		; UINT24   size
 			PUSH	DE		; UNIT24   address
 			PUSH	HL		; char   * filename
 			CALL	_mos_LOAD	; Call the C function mos_LOAD
+			LD	A, L		; Return value in HLU, put in A
 			POP	HL
 			POP	DE
 			POP	BC
@@ -142,6 +149,12 @@ $$:			PUSH	BC		; UINT24   size
 			RET
 
 ; Save a file to the SD card from RAM
+; HLU: Address of filename (zero terminated)
+; DEU: Address to save from
+; BCU: Number of bytes to save
+; Returns:
+; - A: File error, or 0 if OK
+; - F: Carry reset indicates no room for file
 ;
 mos_api_save:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A
@@ -152,12 +165,13 @@ mos_api_save:		LD	A, MB		; Check if MBASE is 0
 			CALL	SET_AHL24
 			CALL	SET_ADE24
 ;
-; Finally, we can do the load
+; Finally, we can do the save
 ;
 $$:			PUSH	BC		; UINT24   size
 			PUSH	DE		; UNIT24   address
 			PUSH	HL		; char   * filename
 			CALL	_mos_SAVE	; Call the C function mos_LOAD
+			LD	A, L		; Return vaue in HLU, put in A
 			POP	HL
 			POP	DE
 			POP	BC
@@ -166,51 +180,59 @@ $$:			PUSH	BC		; UINT24   size
 			
 ; Change directory
 ; HLU: Address of path (zero terminated)
+; Returns:
+; - A: File error, or 0 if OK
 ;			
 mos_api_cd:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A
-			JR	Z, $F		; If it is, we can assume HL and DE are 24 bit
 ;
 ; Now we need to mod HLU to include the MBASE in the U byte
 ;
-			CALL	SET_AHL24
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
 ; Finally, we can do the load
 ;
-$$:			PUSH	HL		; char   * filename	
+			PUSH	HL		; char   * filename	
 			CALL	_mos_CD
+			LD	A, L		; Return vaue in HLU, put in A
 			POP	HL
 			RET
 
 ; Directory listing
+; Returns:
+; - A: File error, or 0 if OK
 ;	
 mos_api_dir:		PUSH	HL
 			CALL	_mos_DIR
+			LD	A, L		; Return value in HLU, put in A
 			POP	HL
 			RET
 			
 ; Delete a file from the SD card
 ; HLU: Address of filename (zero terminated)
+; Returns:
+; - A: File error, or 0 if OK
 ;
 mos_api_del:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A
-			JR	Z, $F		; If it is, we can assume HL and DE are 24 bit
 ;
 ; Now we need to mod HLU to include the MBASE in the U byte
 ;
-			CALL	SET_AHL24
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
-; Finally, we can do the load
+; Finally, we can do the delete
 ;
-$$:			PUSH	HL		; char   * filename
+			PUSH	HL		; char   * filename
 			CALL	_mos_DEL	; Call the C function mos_DEL
+			LD	A, L		; Return vaue in HLU, put in A
 			POP	HL
-			SCF			; Flag as successful
 			RET
 
 ; Rename a file on the SD card
 ; HLU: Address of filename1 (zero terminated)
 ; DEU: Address of filename2 (zero terminated)
+; Returns:
+; - A: File error, or 0 if OK
 ;
 mos_api_ren:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A
@@ -226,9 +248,29 @@ mos_api_ren:		LD	A, MB		; Check if MBASE is 0
 $$:			PUSH	DE		; char * filename2
 			PUSH	HL		; char * filename1
 			CALL	_mos_REN	; Call the C function mos_REN
+			LD	A, L		; Return vaue in HLU, put in A
 			POP	HL
 			POP	DE
-			SCF			; Flag as successful
+			RET
+
+; Make a folder on the SD card
+; HLU: Address of filename (zero terminated)
+; Returns:
+; - A: File error, or 0 if OK
+;
+mos_api_mkdir:		LD	A, MB		; Check if MBASE is 0
+			OR	A, A
+;
+; Now we need to mod HLU to include the MBASE in the U byte
+;
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
+;
+; Finally, we can do the load
+;
+			PUSH	HL		; char   * filename
+			CALL	_mos_MKDIR	; Call the C function mos_DEL
+			LD	A, L		; Return vaue in HLU, put in A
+			POP	HL
 			RET
 
 ; Get a pointer to a system variable
@@ -242,23 +284,25 @@ mos_api_sysvars:	LD	IX, _sysvars
 ; Invoke the line editor
 ; HLU: Address of the buffer
 ; BCU: Buffer length
+;   E: 0 to not clear buffer, 1 to clear
 ; Returns:
 ;   A: Key that was used to exit the input loop (CR=13, ESC=27)
 ;
 mos_api_editline:	LD	A, MB		; Check if MBASE is 0
 			OR	A, A
-			JR	Z, $F		; If it is, we can assume HL and DE are 24 bit
 ;
 ; Now we need to mod HLU to include the MBASE in the U byte
 ;
-			CALL	SET_AHL24
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
-$$:			PUSH	BC		; int 	  bufferLength
+			PUSH	DE		; UINT8	  clear
+			PUSH	BC		; int 	  bufferLength
 			PUSH	HL		; char	* buffer
 			CALL	_mos_EDITLINE
 			LD	A, L		; return value, only interested in lowest byte
 			POP	HL
 			POP	BC
+			POP	DE
 			RET
 
 ; Open a file
@@ -275,13 +319,12 @@ mos_api_fopen:		PUSH	BC
 ;
 			LD	A, MB		; Check if MBASE is 0
 			OR	A, A
-			JR	Z, $F		; If it is, we can assume HL and DE are 24 bit
 ;
 ; Now we need to mod HLU and DEU to include the MBASE in the U byte
 ;
-			CALL	SET_AHL24
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
-$$:			LD	A, C	
+			LD	A, C	
 			LD	BC, 0
 			LD	C, A
 			PUSH	BC		; byte	  mode
@@ -401,6 +444,30 @@ mos_api_feof:		PUSH	BC
 			POP	DE
 			POP	BC
 			RET
+			
+; Copy an error message
+;   E: The error code
+; HLU: Address of buffer to copy message into
+; BCU: Size of buffer
+;
+mos_api_getError:	LD	A, MB		; Check if MBASE is 0
+			OR	A, A
+;
+; Now we need to mod HLU and DEU to include the MBASE in the U byte
+;
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
+;
+; Now copy the error message
+;
+			PUSH	BC		; UINT24 size
+			PUSH	HL		; UINT24 address
+			PUSH	DE		; byte   errno
+			CALL	_mos_GETERROR
+			POP	DE
+			POP	HL
+			POP	BC			
+			RET			; TODO
+			
 			
 ; Commands that have not been implemented yet
 ;
