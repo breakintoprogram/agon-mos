@@ -2,9 +2,10 @@
  * Title:			AGON MOS - MOS line editor
  * Author:			Dean Belfield
  * Created:			18/09/2022
- * Last Updated:	18/09/2022
+ * Last Updated:	28/09/2022
  * 
  * Modinfo:
+ * 28/09/2022:		Added clear parameter to mos_EDITLINE
  */
 
 #include <eZ80.h>
@@ -114,18 +115,26 @@ BOOL deleteCharacter(char *buffer, char c, int insertPos, int len) {
 // Parameters:
 // - buffer: Pointer to the line edit buffer
 // - bufferLength: Size of the buffer in bytes
+// - clear: Set to 0 to not clear, 1 to clear on entry
 // Returns:
 // - The exit key pressed (ESC or CR)
 //
-UINT24 mos_EDITLINE(char * buffer, int bufferLength) {
+UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 	char key = 0;
-	int	 insertPos = 0;
-	int  len = 0;
 	int  limit = bufferLength - 1;
+	int	 insertPos;
+	int  len;
 
 	getModeInformation();
 	
-	buffer[0] = 0;	
+	if(clear) {
+		buffer[0] = 0;	
+		insertPos = 0;
+	}
+	else {
+		printf("%s", buffer);
+		insertPos = strlen(buffer);
+	}
 	
 	while(key != 13 && key != 27) {
 		len = strlen(buffer);
