@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	05/09/2022
+ * Last Updated:	25/09/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -13,6 +13,7 @@
  * 03/08/2022:		Added a handful of MOS API calls
  * 05/08/2022:		Added mos_FEOF
  * 05/09/2022:		Added mos_cmdREN, mos_cmdBOOT; moved mos_EDITLINE into mos_editline.c, default args for LOAD and RUN commands
+ * 25/09/2022:		Added mos_GETERROR, mos_MKDIR; mos_input now sets first byte of buffer to 0
  */
 
 #include <eZ80.h>
@@ -42,10 +43,12 @@ static t_mosCommand mosCommands[] = {
 	{ "LOAD",	&mos_cmdLOAD },
 	{ "SAVE", 	&mos_cmdSAVE },
 	{ "DEL", 	&mos_cmdDEL },
+	{ "ERASE",	&mos_cmdDEL },
 	{ "JMP",	&mos_cmdJMP },
 	{ "RUN", 	&mos_cmdRUN },
 	{ "CD", 	&mos_cmdCD },
 	{ "REN", 	&mos_cmdREN },
+	{ "MKDIR", 	&mos_cmdMKDIR },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -106,7 +109,7 @@ char mos_getkey() {
 UINT24 mos_input(char * buffer, int bufferLength) {
 	INT24 retval;
 	putch(MOS_prompt);
-	retval = mos_EDITLINE(buffer, bufferLength);
+	retval = mos_EDITLINE(buffer, bufferLength, 1);
 	printf("\n\r");
 	return retval;
 }
@@ -356,6 +359,27 @@ int mos_cmdREN(char *ptr) {
 	return 0;
 }
 
+// MKDIR <filename>
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
+int mos_cmdMKDIR(char * ptr) {
+	char *  filename;
+	
+	FRESULT	fr;
+	
+	if(
+		!mos_parseString(NULL, &filename) 
+	) {
+		return 1;
+	}
+	fr = mos_MKDIR(filename);
+	mos_fileError(fr);
+	return 0;
+}
+
 // Load a file from SD card to memory
 // Parameters:
 // - filename: Path of file to load
@@ -485,6 +509,19 @@ UINT24 mos_REN(char * filename1, char * filename2) {
 	return fr;
 }
 
+// Make a directory
+// Parameters:
+// - filename: Path of file to delete
+// Returns:
+// - FatFS return code
+// 
+UINT24 mos_MKDIR(char * filename) {
+	FRESULT	fr;	
+	
+	fr = f_mkdir(filename);
+	return fr;
+}
+
 // Load and run the config file 
 // Parameters:
 // - filename: The config file to execute
@@ -607,3 +644,14 @@ char	mos_FEOF(UINT8 fh) {
 	}
 	return 0;
 }
+
+// Copy an error string to RAM
+// Parameters
+// - errno: The error number
+// - address: Address of the buffer to copy the error code to
+// - size: Size of buffer
+//
+void mos_GETERROR(UINT8 errno, INT24 address, INT24 size) {
+	strncpy((char *)address, mos_fileErrors[errno], size - 1);
+}
+
