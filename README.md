@@ -17,10 +17,12 @@ It also provides an API for file I/O and other common operations for BBC Basic f
 ### MOS Commands
 
 * `CAT`: Directory listing of the current directory. Aliases include `DIR` and `.`
+* `CD path`: Change current directory
 * `LOAD filename <addr>`: Load a file from the SD card to the specified address
+* `MKDIR filename`: Make a folder on the SD card
 * `SAVE filename addr size`: Save a block of memory to the SD card
 * `RUN <addr>`: Call an address in memory (switching to Z80 mode - ADL=0)
-* `DEL filename`: Delete a file
+* `DEL filename`: Delete a file or folder (must be empty). Aliases include `ERASE`
 * `REN filename1 filename2`: Rename a file
 * `JMP addr`: Jump to the specified address in memory
 
