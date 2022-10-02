@@ -22,12 +22,12 @@ mos_del:		EQU	05h
 mos_ren:		EQU	06h
 mos_mkdir:		EQU	07h
 mos_sysvars:		EQU	08h
-mos_editline::		EQU	09h
+mos_editline:		EQU	09h
 mos_fopen:		EQU	0Ah
 mos_fclose:		EQU	0Bh
-mos_fgetc		EQU	0Ch
-mos_fputc		EQU	0Dh
-mos_feof		EQU	0Eh
+mos_fgetc:		EQU	0Ch
+mos_fputc:		EQU	0Dh
+mos_feof:		EQU	0Eh
 mos_getError:		EQU	0Fh
 
 ; FatFS file access functions
