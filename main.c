@@ -2,10 +2,10 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	05/09/2022
+ * Last Updated:	02/10/2022
  *
  * Modinfo:
- * 11/07/2022:		Version 0.01: Tw	eaks for Agon Light, Command Line code added
+ * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
  * 13/07/2022:		Version 0.02
  * 15/07/2022:		Version 0.03: Warm boot support, VBLANK interrupt
  * 25/07/2022:		Version 0.04; Tweaks to initialisation and interrupts
@@ -13,6 +13,7 @@
  * 05/08/2022:		Version 0.06: Interim release with hardware flow control enabled
  * 10/08/2022:		Version 0.07: Bug fixes
  * 05/09/2022:		Version 0.08: Minor updates to MOS
+ * 02/10/2022:		Version 1.00: Improved error handling for languages, changed bootup title to Quark
  */
 
 #include <eZ80.h>
@@ -28,8 +29,8 @@
 #include "ff.h"
 #include "mos.h"
 
-#define		MOS_version		0
-#define		MOS_revision 	8
+#define		MOS_version		1
+#define		MOS_revision 	0
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -84,7 +85,7 @@ int main(void) {
 	else {											// Otherwise warm boot,
 		putch(12);									// Clear the screen
 	}
-	printf("AGON MOS Version %d.%02d\n\r\n\r", MOS_version, MOS_revision);	
+	printf("Agon Quark MOS Version %d.%02d\n\r\n\r", MOS_version, MOS_revision);	
 	EI();											// Enable the interrupts now
 
 	f_mount(&fs, "", 1);							// Mount the SD card
