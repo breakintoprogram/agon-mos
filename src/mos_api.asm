@@ -274,7 +274,6 @@ mos_api_mkdir:		LD	A, MB		; Check if MBASE is 0
 			RET
 
 ; Get a pointer to a system variable
-;   C: System variable to return
 ; Returns:
 ; IXU: Pointer to system variables (see mos_api.asm for more details)
 ;
