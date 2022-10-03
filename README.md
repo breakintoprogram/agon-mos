@@ -25,6 +25,7 @@ It also provides an API for file I/O and other common operations for BBC Basic f
 * `DEL filename`: Delete a file or folder (must be empty). Aliases include `ERASE`
 * `REN filename1 filename2`: Rename a file
 * `JMP addr`: Jump to the specified address in memory
+* `SET option value`: Set a system option
 
 NB:
 
@@ -38,13 +39,18 @@ NB:
 	- `&0BE000 - 0BFFFFF`: Global heap and stack
 6. The RUN command is incomplete - it will eventually call code in ADL mode as well. Use RET.LIS to return back to MOS 
 
+### System options
+
+`SET KEYBOARD n`: Set the keyboard layout (0: UK, 1: US)
+
 ### The autoexec.txt file
 
 If the MOS detects an autoexec.txt file on the root of the SD card during cold-boot, it will read the file in, and execute the MOS commands in the file sequentially from top to bottom.
 
-For example, to automatically load and run BBC BASIC from the root folder, and change to the test folder:
+For example, to set keyboard to US, load BBC BASIC from the root folder, change to the test folder, then run BASIC
 
 ```
+SET KEYBOARD 1
 LOAD bbcbasic &40000
 CD test
 RUN &40000
