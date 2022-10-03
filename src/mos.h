@@ -50,6 +50,7 @@ int		mos_cmdRUN(char * ptr);
 int		mos_cmdCD(char * ptr);
 int		mos_cmdREN(char *ptr);
 int		mos_cmdMKDIR(char *ptr);
+int		mos_cmdSET(char *ptr);
 
 UINT24	mos_LOAD(char * filename, INT24 address, INT24 size);
 UINT24	mos_SAVE(char * filename, INT24 address, INT24 size);

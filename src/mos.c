@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	25/09/2022
+ * Last Updated:	03/10/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -14,6 +14,7 @@
  * 05/08/2022:		Added mos_FEOF
  * 05/09/2022:		Added mos_cmdREN, mos_cmdBOOT; moved mos_EDITLINE into mos_editline.c, default args for LOAD and RUN commands
  * 25/09/2022:		Added mos_GETERROR, mos_MKDIR; mos_input now sets first byte of buffer to 0
+ * 03/10/2022:		Added mos_cmdSET
  */
 
 #include <eZ80.h>
@@ -49,6 +50,7 @@ static t_mosCommand mosCommands[] = {
 	{ "CD", 	&mos_cmdCD },
 	{ "REN", 	&mos_cmdREN },
 	{ "MKDIR", 	&mos_cmdMKDIR },
+	{ "SET",	&mos_cmdSET },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -359,7 +361,7 @@ int mos_cmdREN(char *ptr) {
 	return 0;
 }
 
-// MKDIR <filename>
+// MKDIR <filename> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
@@ -378,6 +380,32 @@ int mos_cmdMKDIR(char * ptr) {
 	fr = mos_MKDIR(filename);
 	mos_fileError(fr);
 	return 0;
+}
+
+// SET <option> <value> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - true if the function succeeded, otherwise false
+//
+int mos_cmdSET(char * ptr) {
+	char *	command;
+	UINT24 	value;
+	
+	if(
+		!mos_parseString(NULL, &command) ||
+		!mos_parseNumber(NULL, &value)
+	) {
+		return 1;
+	}
+	if(strcmp(command, "KEYBOARD") == 0 && value < 2) {
+		putch(0x17);
+		putch(0x00);
+		putch(0x01);
+		putch(value & 0xFF);
+		return 0;
+	}
+	return 1;
 }
 
 // Load a file from SD card to memory
