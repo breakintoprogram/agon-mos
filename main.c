@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	02/10/2022
+ * Last Updated:	03/10/2022
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -14,6 +14,7 @@
  * 10/08/2022:		Version 0.07: Bug fixes
  * 05/09/2022:		Version 0.08: Minor updates to MOS
  * 02/10/2022:		Version 1.00: Improved error handling for languages, changed bootup title to Quark
+ * 03/10/2022:		Version 1.01:
  */
 
 #include <eZ80.h>
@@ -30,7 +31,7 @@
 #include "mos.h"
 
 #define		MOS_version		1
-#define		MOS_revision 	0
+#define		MOS_revision 	1
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
