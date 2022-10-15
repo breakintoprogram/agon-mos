@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	03/10/2022
+ * Last Updated:	13/10/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -15,6 +15,7 @@
  * 05/09/2022:		Added mos_cmdREN, mos_cmdBOOT; moved mos_EDITLINE into mos_editline.c, default args for LOAD and RUN commands
  * 25/09/2022:		Added mos_GETERROR, mos_MKDIR; mos_input now sets first byte of buffer to 0
  * 03/10/2022:		Added mos_cmdSET
+ * 13/10/2022:		Added mos_OSCLI and supporting code
  */
 
 #include <eZ80.h>
@@ -80,12 +81,12 @@ static char * mos_fileErrors[] = {
 	"Invalid parameter"
 };
 
-// Output a file error with MOS prompt
+// Output a file error
 // Parameters:
 // - error: The FatFS error number
 //
 void mos_fileError(int error) {
-	printf("%c%s\n\r", MOS_prompt, mos_fileErrors[error]);
+	printf("\n\r%s\n\r", mos_fileErrors[error]);
 }
 
 // Wait for a keycode character from the VPD
@@ -184,9 +185,8 @@ BOOL mos_parseString(char * ptr, char ** p_Value) {
 // Execute a MOS command
 // Parameters:
 // - buffer: Pointer to a zero terminated string that contains the MOS command with arguments
-// - bufferLength: Size of buffer in bytes
 //
-void mos_exec(char * buffer, int bufferLength) {
+void mos_exec(char * buffer) {
 	char * 	ptr;
 	int 	status;
 	int 	(*func)(char * ptr);
@@ -569,7 +569,7 @@ UINT24 mos_BOOT(char * filename, char * buffer, INT24 size) {
 	if(fr == FR_OK) {
 		while(!f_eof(&fil)) {
 			f_gets(buffer, size, &fil);
-			mos_exec(buffer, size);
+			mos_exec(buffer);
 		}
 	}
 	f_close(&fil);	
@@ -681,5 +681,13 @@ char	mos_FEOF(UINT8 fh) {
 //
 void mos_GETERROR(UINT8 errno, INT24 address, INT24 size) {
 	strncpy((char *)address, mos_fileErrors[errno], size - 1);
+}
+
+// OSCLI
+// Parameters
+// - cmd: Address of the command entered
+//
+void mos_OSCLI(char * cmd) {
+	mos_exec(cmd);
 }
 

@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	24/09/2022
+; Last Updated:	13/10/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -10,6 +10,7 @@
 ; 09/08/2022:	mos_api_sysvars now returns pointer to _sysvars
 ; 05/09/2022:	Added mos_REN
 ; 24/09/2022:	Error codes returned for MOS commands
+; 13/10/2022:	Added mos_OSCLI and supporting code
 
 			.ASSUME	ADL = 1
 			
@@ -22,8 +23,8 @@
 			XREF	SET_AHL24
 			XREF	SET_ADE24
 
+			XREF	_mos_OSCLI
 			XREF	_mos_EDITLINE
-			
 			XREF	_mos_LOAD
 			XREF	_mos_SAVE
 			XREF	_mos_CD
@@ -37,7 +38,7 @@
 			XREF	_mos_FEOF
 			XREF	_mos_GETERROR
 			XREF	_mos_MKDIR
-
+			
 			XREF	_keycode
 			XREF	_sysvars
 			
@@ -65,6 +66,7 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_fputc		; 0x0D
 			DW	mos_api_feof		; 0x0E
 			DW	mos_api_getError	; 0x0F
+			DW	mos_api_oscli		; 0x10
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -452,7 +454,7 @@ mos_api_feof:		PUSH	BC
 mos_api_getError:	LD	A, MB		; Check if MBASE is 0
 			OR	A, A
 ;
-; Now we need to mod HLU and DEU to include the MBASE in the U byte
+; Now we need to mod HLU to include the MBASE in the U byte
 ;
 			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
@@ -465,7 +467,26 @@ mos_api_getError:	LD	A, MB		; Check if MBASE is 0
 			POP	DE
 			POP	HL
 			POP	BC			
-			RET			; TODO
+			RET
+
+; Execute a MOS command
+; HLU: Pointer the the MOS command string
+; DEU: Pointer to additional command structure
+; BCU: Number of additional commands
+;
+mos_api_oscli:		LD	A, MB		; Check if MBASE is 0
+			OR	A, A				
+;
+; Now we need to mod HLU to include the MBASE in the U byte
+;
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
+;
+; Now execute the MOS command
+;
+$$:			PUSH	HL		; char * buffer
+			CALL	_mos_OSCLI
+			POP	HL
+			RET			
 			
 			
 ; Commands that have not been implemented yet

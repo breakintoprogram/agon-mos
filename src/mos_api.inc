@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	24/09/2022
+; Last Updated:	13/10/2022
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -10,6 +10,7 @@
 ; 18/08/2022:	Added system variables: scrchar, scrpixel, audioChannel, audioSuccess, vpd_pflags
 ; 05/09/2022:	Added mos_ren, vdp_pflag_mode
 ; 24/09/2022:	Added mos_getError, mos_mkdir
+; 13/10/2022:	Added mos_oscli
 
 ; MOS high level functions
 ;
@@ -29,6 +30,7 @@ mos_fgetc:		EQU	0Ch
 mos_fputc:		EQU	0Dh
 mos_feof:		EQU	0Eh
 mos_getError:		EQU	0Fh
+mos_oscli:		EQU	10h
 
 ; FatFS file access functions
 ;

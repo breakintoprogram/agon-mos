@@ -14,6 +14,7 @@
  * 05/08/2022:		Added mos_FEOF
  * 05/09/2022:		Added mos_cmdREN, mos_cmdBOOT; moved mos_EDITLINE into mos_editline.c
  * 25/09/2022:		Added mos_GETERROR, mos_MKDIR
+ * 13/10/2022:		Added mos_OSCLI and supporting code
  */
 
 #ifndef MOS_H
@@ -36,7 +37,7 @@ void 	mos_fileError(int error);
 char	mos_getkey(void);
 UINT24	mos_input(char * buffer, int bufferLength);
 void *	mos_getCommand(char * ptr);
-void	mos_exec(char * buffer, int bufferLength);
+void	mos_exec(char * buffer);
 
 BOOL 	mos_parseNumber(char * ptr, UINT24 * p_Value);
 BOOL	mos_parseString(char * ptr, char ** p_Value);
@@ -69,5 +70,6 @@ void	mos_FPUTC(UINT8 fh, char c);
 char	mos_FEOF(UINT8 fh);
 
 void 	mos_GETERROR(UINT8 errno, INT24 address, INT24 size);
+void 	mos_OSCLI(char * cmd);
 
 #endif MOS_H
