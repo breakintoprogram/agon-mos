@@ -14,7 +14,7 @@
  * 10/08/2022:		Version 0.07: Bug fixes
  * 05/09/2022:		Version 0.08: Minor updates to MOS
  * 02/10/2022:		Version 1.00: Improved error handling for languages, changed bootup title to Quark
- * 03/10/2022:		Version 1.01:
+ * 03/10/2022:		Version 1.01: Added SET command
  */
 
 #include <eZ80.h>
@@ -103,7 +103,7 @@ int main(void) {
 	//
 	while(1) {
 		if(mos_input(&cmd, sizeof(cmd)) == 13) {
-			mos_exec(&cmd, sizeof(cmd));
+			mos_exec(&cmd);
 		}
 		else {
 			printf("%cEscape\n\r", MOS_prompt);

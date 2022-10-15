@@ -26,6 +26,7 @@
 <file filter-key="">src_startup\vectors16.asm</file>
 <file filter-key="">src\config.h</file>
 <file filter-key="">src\mos_api.inc</file>
+<file filter-key="flash">..\BBC Basic\Debug\BBC Basic.hex</file>
 </files>
 
 <!-- configuration information -->
@@ -73,7 +74,7 @@
 </tool>
 <tool name="FlashProgrammer">
 <options>
-<option name="erasebeforeburn" type="boolean" change-action="none">false</option>
+<option name="erasebeforeburn" type="boolean" change-action="none">true</option>
 <option name="eraseinfopage" type="boolean" change-action="none">false</option>
 <option name="enableinfopage" type="boolean" change-action="none">false</option>
 <option name="includeserial" type="boolean" change-action="none">false</option>
@@ -88,7 +89,7 @@
 <option name="snbigendian" type="boolean" change-action="none">true</option>
 <option name="singleval" type="string" change-action="none">0</option>
 <option name="singlevalformat" type="integer" change-action="none">0</option>
-<option name="usepageerase" type="boolean" change-action="none">false</option>
+<option name="usepageerase" type="boolean" change-action="none">true</option>
 <option name="useinfopage" type="boolean" change-action="none">false</option>
 </options>
 </tool>
