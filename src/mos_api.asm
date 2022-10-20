@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	13/10/2022
+; Last Updated:	20/10/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -11,6 +11,7 @@
 ; 05/09/2022:	Added mos_REN
 ; 24/09/2022:	Error codes returned for MOS commands
 ; 13/10/2022:	Added mos_OSCLI and supporting code
+; 20/10/2022:	Tweaked error handling
 
 			.ASSUME	ADL = 1
 			
@@ -473,6 +474,8 @@ mos_api_getError:	LD	A, MB		; Check if MBASE is 0
 ; HLU: Pointer the the MOS command string
 ; DEU: Pointer to additional command structure
 ; BCU: Number of additional commands
+; Returns:
+;   A: MOS error code
 ;
 mos_api_oscli:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A				
@@ -485,6 +488,7 @@ mos_api_oscli:		LD	A, MB		; Check if MBASE is 0
 ;
 $$:			PUSH	HL		; char * buffer
 			CALL	_mos_OSCLI
+			LD	A, L		; Return vaue in HLU, put in A			
 			POP	HL
 			RET			
 			

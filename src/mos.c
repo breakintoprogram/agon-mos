@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	13/10/2022
+ * Last Updated:	20/10/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -16,6 +16,7 @@
  * 25/09/2022:		Added mos_GETERROR, mos_MKDIR; mos_input now sets first byte of buffer to 0
  * 03/10/2022:		Added mos_cmdSET
  * 13/10/2022:		Added mos_OSCLI and supporting code
+ * 20/10/2022:		Tweaked error handling
  */
 
 #include <eZ80.h>
@@ -58,7 +59,7 @@ static t_mosCommand mosCommands[] = {
 
 // Array of file errors; mapped by index to the error numbers returned by FatFS
 //
-static char * mos_fileErrors[] = {
+static char * mos_errors[] = {
 	"OK",
 	"Error accessing SD card",
 	"Assertion failed",
@@ -78,15 +79,16 @@ static char * mos_fileErrors[] = {
 	"Volume locked",
 	"LFN working buffer could not be allocated",
 	"Too many open files",
-	"Invalid parameter"
+	"Invalid parameter",
+	"Invalid command",
 };
 
 // Output a file error
 // Parameters:
 // - error: The FatFS error number
 //
-void mos_fileError(int error) {
-	printf("\n\r%s\n\r", mos_fileErrors[error]);
+void mos_error(int error) {
+	printf("\n\r%s\n\r", mos_errors[error]);
 }
 
 // Wait for a keycode character from the VPD
@@ -185,46 +187,42 @@ BOOL mos_parseString(char * ptr, char ** p_Value) {
 // Execute a MOS command
 // Parameters:
 // - buffer: Pointer to a zero terminated string that contains the MOS command with arguments
+// Returns:
+// - MOS error code
 //
-void mos_exec(char * buffer) {
+int mos_exec(char * buffer) {
 	char * 	ptr;
-	int 	status;
+	int 	fr = 20;
 	int 	(*func)(char * ptr);
 	
 	ptr = strtok(buffer, " ");
 	if(ptr != NULL) {
 		func = mos_getCommand(ptr);
 		if(func != 0) {
-			status = func(ptr);
-			if(status != 0) {
-				printf("Bad Parameters\n\r");
-			}
-		}
-		else {
-			printf("%cInvalid Command\n\r", MOS_prompt);
+			fr = func(ptr);
 		}
 	}
+	return fr;
 }
 
 // DIR command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdDIR(char * ptr) {	
 	FRESULT	fr;
-	
+
 	fr = mos_DIR();
-	mos_fileError(fr);
-	return 0;
+	return fr;
 }
 
 // LOAD <filename> <addr> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdLOAD(char * ptr) {
 	FRESULT	fr;
@@ -234,19 +232,18 @@ int mos_cmdLOAD(char * ptr) {
 	if(
 		!mos_parseString(NULL, &filename)
 	) {
-		return 1;
+		return 19; // Bad Parameter
 	}
 	if(!mos_parseNumber(NULL, &addr)) addr = MOS_defaultLoadAddress;
 	fr = mos_LOAD(filename, addr, 0);
-	mos_fileError(fr);
-	return 0;	
+	return fr;	
 }
 
 // SAVE <filename> <addr> <len> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdSAVE(char * ptr) {
 	FRESULT	fr;
@@ -259,18 +256,17 @@ int mos_cmdSAVE(char * ptr) {
 		!mos_parseNumber(NULL, &addr) ||
 		!mos_parseNumber(NULL, &size)
 	) {
-		return 1;
+		return 19; // Bad Parameter
 	}
 	fr = mos_SAVE(filename, addr, size);
-	mos_fileError(fr);
-	return 0;
+	return fr;
 }
 
 // DEL <filename> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdDEL(char * ptr) {
 	char *  filename;
@@ -280,24 +276,23 @@ int mos_cmdDEL(char * ptr) {
 	if(
 		!mos_parseString(NULL, &filename) 
 	) {
-		return 1;
+		return 19; // Bad Parameter
 	}
 	fr = mos_DEL(filename);
-	mos_fileError(fr);
-	return 0;
+	return fr;
 }
 
 // JMP <addr> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdJMP(char *ptr) {
 	UINT24 	addr;
 	void (* dest)(void) = 0;
 	if(!mos_parseNumber(NULL, &addr)) {
-		return 1;
+		return 19; // Bad Parameter
 	};
 	dest = (void *)addr;
 	dest();
@@ -308,7 +303,7 @@ int mos_cmdJMP(char *ptr) {
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdRUN(char *ptr) {
 	UINT24 	addr;
@@ -322,7 +317,7 @@ int mos_cmdRUN(char *ptr) {
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdCD(char * ptr) {
 	char *  path;
@@ -332,18 +327,17 @@ int mos_cmdCD(char * ptr) {
 	if(
 		!mos_parseString(NULL, &path) 
 	) {
-		return 1;
+		return 19; // Bad Parameter
 	}
 	fr = f_chdir(path);
-	mos_fileError(fr);
-	return 0;
+	return fr;
 }
 
 // REN <filename1> <filename2> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdREN(char *ptr) {
 	FRESULT	fr;
@@ -354,18 +348,17 @@ int mos_cmdREN(char *ptr) {
 		!mos_parseString(NULL, &filename1) ||
 		!mos_parseString(NULL, &filename2)
 	) {
-		return 1;
+		return 19; // Bad Parameter
 	}
 	fr = mos_REN(filename1, filename2);
-	mos_fileError(fr);
-	return 0;
+	return fr;
 }
 
 // MKDIR <filename> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdMKDIR(char * ptr) {
 	char *  filename;
@@ -375,18 +368,17 @@ int mos_cmdMKDIR(char * ptr) {
 	if(
 		!mos_parseString(NULL, &filename) 
 	) {
-		return 1;
+		return 19; // Bad Parameter
 	}
 	fr = mos_MKDIR(filename);
-	mos_fileError(fr);
-	return 0;
+	return fr;
 }
 
 // SET <option> <value> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - true if the function succeeded, otherwise false
+// - MOS error code
 //
 int mos_cmdSET(char * ptr) {
 	char *	command;
@@ -396,7 +388,7 @@ int mos_cmdSET(char * ptr) {
 		!mos_parseString(NULL, &command) ||
 		!mos_parseNumber(NULL, &value)
 	) {
-		return 1;
+		return 19; // Bad Parameter
 	}
 	if(strcmp(command, "KEYBOARD") == 0 && value < 2) {
 		putch(0x17);
@@ -405,7 +397,7 @@ int mos_cmdSET(char * ptr) {
 		putch(value & 0xFF);
 		return 0;
 	}
-	return 1;
+	return 19; // Bad Parameter
 }
 
 // Load a file from SD card to memory
@@ -680,14 +672,18 @@ char	mos_FEOF(UINT8 fh) {
 // - size: Size of buffer
 //
 void mos_GETERROR(UINT8 errno, INT24 address, INT24 size) {
-	strncpy((char *)address, mos_fileErrors[errno], size - 1);
+	strncpy((char *)address, mos_errors[errno], size - 1);
 }
 
 // OSCLI
 // Parameters
 // - cmd: Address of the command entered
+// Returns:
+// - MOS error code
 //
-void mos_OSCLI(char * cmd) {
-	mos_exec(cmd);
+UINT24 mos_OSCLI(char * cmd) {
+	UINT24 fr;
+	fr = mos_exec(cmd);
+	return fr;
 }
 
