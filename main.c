@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	03/10/2022
+ * Last Updated:	20/10/2022
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -14,7 +14,8 @@
  * 10/08/2022:		Version 0.07: Bug fixes
  * 05/09/2022:		Version 0.08: Minor updates to MOS
  * 02/10/2022:		Version 1.00: Improved error handling for languages, changed bootup title to Quark
- * 03/10/2022:		Version 1.01: Added SET command
+ * 03/10/2022:		Version 1.01: Added SET command, tweaked error handling
+ * 20/10/2022:					+ Tweaked error handling
  */
 
 #include <eZ80.h>
@@ -103,7 +104,7 @@ int main(void) {
 	//
 	while(1) {
 		if(mos_input(&cmd, sizeof(cmd)) == 13) {
-			mos_exec(&cmd);
+			mos_error(mos_exec(&cmd));
 		}
 		else {
 			printf("%cEscape\n\r", MOS_prompt);
