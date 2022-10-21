@@ -14,6 +14,10 @@ The MOS is a command line machine operating system, similar to CP/M or DOS, that
 
 It also provides an API for file I/O and other common operations for BBC Basic for Z80 and other third-party applications.
 
+### System Requirements
+
+* A 32GB or less micro-SD card formatted FAT32
+
 ### MOS Commands
 
 * `CAT`: Directory listing of the current directory. Aliases include `DIR` and `.`
@@ -51,20 +55,21 @@ For example, to set keyboard to US, load BBC BASIC from the root folder, change 
 
 ```
 SET KEYBOARD 1
-LOAD bbcbasic &40000
+LOAD bbcbasic
 CD test
-RUN &40000
+RUN
 ```
 
-### Running BBC Basic for Z80
+### Loadig BBC Basic for Z80
 
-1. Copy bbcbasic.bin from the bin directory in this project to the root directory of the Agon SD card
-2. Boot the AGON with MOS 0.04 or greater
-3. Check the file is on the SD card with a `CAT` or `.` command
-4. Type the following commands into MOS:
+1. Download bbcbasic.bin from [agon-bbc-basic releases](https://github.com/breakintoprogram/agon-bbc-basic/releases)
+2. Copy it to the root directory of the Agon SD card
+3. Insert the SD card into the AGON and reset/boot it
+4. Check the file is on the SD card with a `CAT` or `.` command
+5. Type the following commands into MOS:
 	- `LOAD bbcbasic.bin`
 	- `RUN`
-5. You should then be greeted with the BBC Basic for Z80 prompt
+6. You should then be greeted with the BBC Basic for Z80 prompt
 
 ### Etiquette
 
@@ -74,6 +79,8 @@ I will review this policy once the code is approaching live status and I have ti
 ### Build
 
 The eZ80 is programmed via the ZDI connector on the left-hand side of the board. This requires a Zilog USB Smart Cable (part number ZUSBSC00100ZACG) that can be purchased from online stockists such as Mouser or RS Components. Note that at time of writing (July 2022) there are lead times for this cable.
+
+Important! Make sure you get that exact model of cable; there are variants for the Zilog Encore CPU that look similar, but are not compatible with the eZ80 CPU.
 
 In addition to the cable, you will need to download the free ZDS II tools ([product ID SD00063](https://zilog.com/index.php?option=com_zcm&task=view&soft_id=38&Itemid=74)). Note that this is only available for Windows.
 
