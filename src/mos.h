@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	20/10/2022
+ * Last Updated:	13/11/2022
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -16,6 +16,7 @@
  * 25/09/2022:		Added mos_GETERROR, mos_MKDIR
  * 13/10/2022:		Added mos_OSCLI and supporting code
  * 20/10/2022:		Tweaked error handling
+ * 13/11/2022:		Added mos_cmp
  */
 
 #ifndef MOS_H
@@ -38,6 +39,7 @@ void 	mos_error(int error);
 char	mos_getkey(void);
 UINT24	mos_input(char * buffer, int bufferLength);
 void *	mos_getCommand(char * ptr);
+BOOL 	mos_cmp(char *p1, char *p2);
 int		mos_exec(char * buffer);
 
 BOOL 	mos_parseNumber(char * ptr, UINT24 * p_Value);

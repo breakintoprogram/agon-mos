@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	20/10/2022
+ * Last Updated:	13/11/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -17,6 +17,8 @@
  * 03/10/2022:		Added mos_cmdSET
  * 13/10/2022:		Added mos_OSCLI and supporting code
  * 20/10/2022:		Tweaked error handling
+ * 08/11/2022:		Fixed return value bug in mos_cmdRUN
+ * 13/11/2022:		Case insensitive command processing with abbreviations; mos_exec now runs commands off SD card
  */
 
 #include <eZ80.h>
@@ -31,7 +33,7 @@
 #include "uart.h"
 #include "ff.h"
 
-extern void exec16(long addr);
+extern int exec16(long addr);
 
 extern volatile char keycode;
 
@@ -45,12 +47,12 @@ static t_mosCommand mosCommands[] = {
 	{ "CAT",	&mos_cmdDIR },
 	{ "LOAD",	&mos_cmdLOAD },
 	{ "SAVE", 	&mos_cmdSAVE },
-	{ "DEL", 	&mos_cmdDEL },
+	{ "DELETE",	&mos_cmdDEL },
 	{ "ERASE",	&mos_cmdDEL },
 	{ "JMP",	&mos_cmdJMP },
 	{ "RUN", 	&mos_cmdRUN },
 	{ "CD", 	&mos_cmdCD },
-	{ "REN", 	&mos_cmdREN },
+	{ "RENAME",	&mos_cmdREN },
 	{ "MKDIR", 	&mos_cmdMKDIR },
 	{ "SET",	&mos_cmdSET },
 };
@@ -130,11 +132,32 @@ void * mos_getCommand(char * ptr) {
 	t_mosCommand * cmd;	
 	for(i = 0; i < mosCommands_count; i++) {
 		cmd = &mosCommands[i];
-		if(strcmp(cmd->name, ptr) == 0) {
+		if(mos_cmp(cmd->name, ptr) == 0) {
 			return cmd->func;
 		}
 	}
 	return 0;
+}
+
+// Case insensitive commpare with abbreviations
+// Parameters:
+// - p1: The command to be compared against
+// - p2: The inputted command
+//
+BOOL mos_cmp(const char *p1, const char *p2) {
+	char c1;
+	char c2;	
+	do {		
+		c1 = toupper(*p1++);
+		c2 = toupper(*p2++);
+		if(c2 == '.') {
+			c1 = 0;
+			c2 = 0;
+		}
+		if(c1 < 0x20) c1 = 0;
+		if(c2 < 0x20) c2 = 0;
+	} while(c1 && c2 && c1 == c2);
+	return (const unsigned char*)c1 - (const unsigned char*)c2;
 }
 
 // Parse a number from the line edit buffer
@@ -192,14 +215,27 @@ BOOL mos_parseString(char * ptr, char ** p_Value) {
 //
 int mos_exec(char * buffer) {
 	char * 	ptr;
-	int 	fr = 20;
+	int 	fr = 0;
 	int 	(*func)(char * ptr);
+	char	path[256];
 	
 	ptr = strtok(buffer, " ");
 	if(ptr != NULL) {
 		func = mos_getCommand(ptr);
 		if(func != 0) {
 			fr = func(ptr);
+		}
+		else {
+			sprintf(path, "/mos/%s.bin", ptr);
+			fr = mos_LOAD(path, MOS_starLoadAddress, 0);
+			if(fr == 0) {
+				fr = exec16(MOS_starLoadAddress);
+			}
+			else {
+				if(fr == 4) {
+					fr = 20;
+				}
+			}
 		}
 	}
 	return fr;
@@ -309,8 +345,7 @@ int mos_cmdRUN(char *ptr) {
 	UINT24 	addr;
 	void (* dest)(void) = 0;
 	if(!mos_parseNumber(NULL, &addr)) addr = MOS_defaultLoadAddress;
-	exec16(addr);
-	return 0;
+	return exec16(addr);
 }
 
 // CD <path> command
