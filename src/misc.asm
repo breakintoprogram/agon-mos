@@ -2,11 +2,12 @@
 ; Title:	AGON MOS - Miscellaneous helper functions
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	10/08/2022
+; Last Updated:	08/11/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added SET_AHL24 and SET_ADE24
 ; 10/08/2022:	Optimised SET_ADE24
+; 08/11/2022:	Fixed return value bug in exec16
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -59,7 +60,7 @@ SET_ADE24:		EX	DE, HL
 			RET
 
 ; Execute a program in RAM
-; void * _exec16(unsigned long address)
+; int * _exec16(unsigned long address)
 ; Params:
 ; - address: The 24-bit address to call
 ;
@@ -72,7 +73,7 @@ _exec16:		PUSH 	IY
 			ADD	IY, SP		; Standard prologue
 			PUSH 	AF		; Stack any registers being used
 			PUSH	DE
-			PUSH	HL
+			PUSH	IX
 			LD	A, MB
 			PUSH	AF
 			LD	DE, (IY+6)	; Get the address
@@ -81,17 +82,18 @@ _exec16:		PUSH 	IY
 ;
 ; Write out a short subroutine "CALL.IS (DE): RET" to RAM
 ;
-			LD	IY,_callSM	; Storage for the self modified routine
-			LD	(IY + 0), 49h	; CALL.IS llhh
-			LD	(IY + 1), CDh
-			LD	(IY + 2), E
-			LD	(IY + 3), D
-			LD	(IY + 4), C9h	; RET		
+
+			LD	IX,_callSM	; Storage for the self modified routine
+			LD	(IX + 0), 49h	; CALL.IS llhh
+			LD	(IX + 1), CDh
+			LD	(IX + 2), E
+			LD	(IX + 3), D
+			LD	(IX + 4), C9h	; RET		
 			CALL	_callSM		; Call the subroutine
 			
 			POP	AF		; Restore the MBASE register
 			LD	MB, A
-			POP	HL		; Balance the stack
+			POP	IX
 			POP	DE
 			POP 	AF
 			LD	SP, IY          ; Standard epilogue
