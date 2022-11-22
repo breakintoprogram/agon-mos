@@ -2,12 +2,13 @@
 ; Title:	AGON MOS - Miscellaneous helper functions
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	08/11/2022
+; Last Updated:	19/11/2022
 ;
 ; Modinfo:
 ; 03/08/2022:	Added SET_AHL24 and SET_ADE24
 ; 10/08/2022:	Optimised SET_ADE24
 ; 08/11/2022:	Fixed return value bug in exec16
+; 19/11/2022:	Added exec24 and params for exec16/24 functions
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -22,8 +23,10 @@
 			XDEF	SET_ADE24
 			
 			XDEF	__exec16
-			XDEF	_exec16
+			XDEF	__exec24
 			
+			XDEF	_exec16			
+			XDEF	_exec24
 			XREF	_callSM
 			
 ; Switch on A - lookup table immediately after call
@@ -60,9 +63,46 @@ SET_ADE24:		EX	DE, HL
 			RET
 
 ; Execute a program in RAM
-; int * _exec16(unsigned long address)
+; int * _exec24(UINT24 address, char * params)
 ; Params:
 ; - address: The 24-bit address to call
+; - params: 24-bit pointer to the params buffer
+;
+; This function will call the 24 bit address and keep the eZ80 in ADL mode
+; The called function must do a RET and take care of preserving registers
+;
+__exec24:
+_exec24:		PUSH 	IY
+			LD	IY, 0
+			ADD	IY, SP		; Standard prologue
+			PUSH 	AF		; Stack any registers being used
+			PUSH	DE
+			PUSH	IX
+			LD	DE, (IY+6)	; Get the address
+			LD	A, (IY+8)	; And the high byte for the code segment
+			LD	HL, (IY+9)	; Load HLU with the pointer to the params
+;
+; Write out a short subroutine "JP (DE)" to RAM
+;			
+			LD	IX, _callSM	; Storage for the self modified routine
+			LD	(IX + 0), C3h	; JP llhhuu
+			LD	(IX + 1), E
+			LD	(IX + 2), D
+			LD	(IX + 3), A	
+			CALL	_callSM		; Call the subroutine
+			
+			POP	IX
+			POP	DE
+			POP 	AF
+			LD	SP, IY          ; Standard epilogue
+			POP	IY
+			RET				
+
+; Execute a program in RAM
+; int * _exec16(UINT24 address, char * params)
+; Params:
+; - address: The 24-bit address to call
+; - params: 24-bit pointer to the params buffer
 ;
 ; This function will call the 24 bit address and switch the eZ80 into Z80 mode (ADL=0)
 ; The called function must do a RET.LIS (49h, C9h) and take care of preserving registers
@@ -78,12 +118,13 @@ _exec16:		PUSH 	IY
 			PUSH	AF
 			LD	DE, (IY+6)	; Get the address
 			LD	A, (IY+8)	; And the high byte for the code segment
-			LD	MB, A		; Set the MBASE register		
+			LD	MB, A		; Set the MBASE register
+			LD	HL, (IY+9)	; Load HLU with the pointer to the params			
 ;
 ; Write out a short subroutine "CALL.IS (DE): RET" to RAM
 ;
 
-			LD	IX,_callSM	; Storage for the self modified routine
+			LD	IX, _callSM	; Storage for the self modified routine
 			LD	(IX + 0), 49h	; CALL.IS llhh
 			LD	(IX + 1), CDh
 			LD	(IX + 2), E
