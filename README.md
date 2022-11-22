@@ -18,6 +18,10 @@ It also provides an API for file I/O and other common operations for BBC Basic f
 
 * A 32GB or less micro-SD card formatted FAT32
 
+### The MOS folder
+
+From version 1.02 of MOS, a `mos` folder needs to be created in the root of the SD card. This is for MOS extensions that run off SD card
+
 ### MOS Commands
 
 * `CAT`: Directory listing of the current directory. Aliases include `DIR` and `.`
@@ -25,7 +29,7 @@ It also provides an API for file I/O and other common operations for BBC Basic f
 * `LOAD filename <addr>`: Load a file from the SD card to the specified address
 * `MKDIR filename`: Make a folder on the SD card
 * `SAVE filename addr size`: Save a block of memory to the SD card
-* `RUN <addr>`: Call an address in memory (switching to Z80 mode - ADL=0)
+* `RUN <addr>`: Call an executable binary loaded in memory
 * `DEL filename`: Delete a file or folder (must be empty). Aliases include `ERASE`
 * `REN filename1 filename2`: Rename a file
 * `JMP addr`: Jump to the specified address in memory
@@ -40,8 +44,10 @@ NB:
 5. Addresses are 24-bit:
 	- `&000000 - &01FFFF`: MOS (Flash ROM)
 	- `&040000 - &0BDFFF`: User RAM
-	- `&0BE000 - 0BFFFFF`: Global heap and stack
-6. The RUN command is incomplete - it will eventually call code in ADL mode as well. Use RET.LIS to return back to MOS 
+	- `&0B0000 - &0B7FFF`: Storage for loading MOS star command executables off SD card 
+	- `&0BC000 - 0BFFFFF`: Global heap and stack
+6. The RUN command checks a header embedded from byte 64 of the executable and can run either Z80 or ADL mode executables 
+7. MOS will also search the `mos` folder on the SD card for any executables, and will run those like built-in MOS commands
 
 ### System options
 
