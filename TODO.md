@@ -1,9 +1,13 @@
 # TODO
 ### Next Jobs
-- The RUN command: modify to load file in and run either in Z80 or ADL mode
-- Add code to run external * commands from SD card
 - Add upgrade functionality so that the MOS can be updated from SD card
 ### Fixed Bugs / New Features
+#### Version 1.02
+- The RUN command: modify to load file in and run either in Z80 or ADL mode
+- Add code to run external * commands from SD card
+- MOS commands are now case-insensitive and can be abbreviated with a '.'
+#### Version 1.01
+- Minor bug fixes and improvements
 #### Version 0.08
 - Improved the line editor
 - Added MOS API command `REN`: Rename a file on the SD card
