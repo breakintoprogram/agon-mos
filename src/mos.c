@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	13/11/2022
+ * Last Updated:	19/11/2022
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -19,6 +19,7 @@
  * 20/10/2022:		Tweaked error handling
  * 08/11/2022:		Fixed return value bug in mos_cmdRUN
  * 13/11/2022:		Case insensitive command processing with abbreviations; mos_exec now runs commands off SD card
+ * 19/11/2022:		Added support for passing params to executables & ADL mode
  */
 
 #include <eZ80.h>
@@ -26,6 +27,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "mos.h"
 #include "config.h"
@@ -33,9 +35,12 @@
 #include "uart.h"
 #include "ff.h"
 
-extern int exec16(long addr);
+extern int exec16(UINT24 addr, char * params);	// In misc.asm
+extern int exec24(UINT24 addr, char * params);	// In misc.asm
 
-extern volatile char keycode;
+extern volatile char keycode;					// In globals.asm
+
+static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
 
 t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 
@@ -83,6 +88,7 @@ static char * mos_errors[] = {
 	"Too many open files",
 	"Invalid parameter",
 	"Invalid command",
+	"Invalid executable",
 };
 
 // Output a file error
@@ -160,6 +166,51 @@ BOOL mos_cmp(const char *p1, const char *p2) {
 	return (const unsigned char*)c1 - (const unsigned char*)c2;
 }
 
+// String tokeniser
+// Parameters:
+// - s1: String to tokenise
+// - s2: Delimiter
+// - ptr: Pointer to store the current position in (mos_strtok_r)
+// Returns:
+// - Pointer to tokenised string
+//
+char * mos_strtok(char *s1, char * s2) {
+	return mos_strtok_r(s1, s2, &mos_strtok_ptr);
+}
+
+char * mos_strtok_r(char *s1, const char *s2, char **ptr) {
+	char *end;
+
+	if (s1 == NULL) {
+		s1 = *ptr;
+	}
+	
+	if (*s1 == '\0') {
+		*ptr = s1;
+		return NULL;
+    }
+	// Scan leading delimiters
+	//
+	s1 += strspn(s1, s2);
+	if (*s1 == '\0') {
+		*ptr = s1;
+		return NULL;
+    }
+	// Find the end of the token
+	//
+	end = s1 + strcspn(s1, s2);
+	if (*end == '\0') {
+      *ptr = end;
+      return s1;
+    }
+	// Terminate the token and make *SAVE_PTR point past it
+	//
+	*end = '\0';
+	*ptr = end + 1;
+	
+	return s1;
+}
+
 // Parse a number from the line edit buffer
 // Parameters:
 // - ptr: Pointer to the number in the line edit buffer
@@ -173,7 +224,7 @@ BOOL mos_parseNumber(char * ptr, UINT24 * p_Value) {
 	int 	base = 10;
 	long 	value;
 
-	p = strtok(p, " ");
+	p = mos_strtok(p, " ");
 	if(p == NULL) {
 		return 0;
 	}
@@ -199,7 +250,7 @@ BOOL mos_parseNumber(char * ptr, UINT24 * p_Value) {
 BOOL mos_parseString(char * ptr, char ** p_Value) {
 	char *	p = ptr;
 
-	p = strtok(p, " ");
+	p = mos_strtok(p, " ");
 	if(p == NULL) {
 		return 0;
 	}
@@ -218,8 +269,9 @@ int mos_exec(char * buffer) {
 	int 	fr = 0;
 	int 	(*func)(char * ptr);
 	char	path[256];
-	
-	ptr = strtok(buffer, " ");
+	UINT8	mode;
+
+	ptr = mos_strtok(buffer, " ");
 	if(ptr != NULL) {
 		func = mos_getCommand(ptr);
 		if(func != 0) {
@@ -229,7 +281,18 @@ int mos_exec(char * buffer) {
 			sprintf(path, "/mos/%s.bin", ptr);
 			fr = mos_LOAD(path, MOS_starLoadAddress, 0);
 			if(fr == 0) {
-				fr = exec16(MOS_starLoadAddress);
+				mode = mos_execMode((UINT8 *)MOS_starLoadAddress);
+				switch(mode) {
+					case 0:		// Z80 mode
+						fr = exec16(MOS_starLoadAddress, mos_strtok_ptr);
+						break;
+					case 1: 	// ADL mode
+						fr = exec24(MOS_starLoadAddress, mos_strtok_ptr);
+						break;	
+					default:	// Unrecognised header
+						fr = 21;
+						break;
+				}
 			}
 			else {
 				if(fr == 4) {
@@ -239,6 +302,24 @@ int mos_exec(char * buffer) {
 		}
 	}
 	return fr;
+}
+
+// Get the MOS Z80 execution mode
+// Parameters:
+// - ptr: Pointer to the code block
+// Returns:
+// - 0: Z80 mode
+// - 1: ADL mode
+//
+UINT8 mos_execMode(UINT8 * ptr) {
+	if(
+		*(ptr+0x40) == 'M' &&
+		*(ptr+0x41) == 'O' &&
+		*(ptr+0x42) == 'S'
+	) {
+		return *(ptr+0x44);
+	}
+	return 0xFF;
 }
 
 // DIR command
@@ -342,10 +423,27 @@ int mos_cmdJMP(char *ptr) {
 // - MOS error code
 //
 int mos_cmdRUN(char *ptr) {
+	int 	fr;
 	UINT24 	addr;
+	UINT8	mode;
 	void (* dest)(void) = 0;
-	if(!mos_parseNumber(NULL, &addr)) addr = MOS_defaultLoadAddress;
-	return exec16(addr);
+	
+	if(!mos_parseNumber(NULL, &addr)) {
+		addr = MOS_defaultLoadAddress;
+	}
+	mode = mos_execMode((UINT8 *)addr);
+	switch(mode) {
+		case 0:		// Z80 mode
+			fr = exec16(addr, mos_strtok_ptr);
+			break;
+		case 1: 	// ADL mode
+			fr = exec24(addr, mos_strtok_ptr);
+			break;	
+		default:	// Unrecognised header
+			fr = 21;
+			break;
+	}	
+	return fr;
 }
 
 // CD <path> command

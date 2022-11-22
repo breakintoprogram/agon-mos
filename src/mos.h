@@ -17,6 +17,7 @@
  * 13/10/2022:		Added mos_OSCLI and supporting code
  * 20/10/2022:		Tweaked error handling
  * 13/11/2022:		Added mos_cmp
+ * 21/11/2022:		Added support for passing params to executables & ADL mode
  */
 
 #ifndef MOS_H
@@ -40,7 +41,11 @@ char	mos_getkey(void);
 UINT24	mos_input(char * buffer, int bufferLength);
 void *	mos_getCommand(char * ptr);
 BOOL 	mos_cmp(char *p1, char *p2);
+char *	mos_strtok(char *s1, char * s2);
+char *	mos_strtok_r(char *s1, const char *s2, char **ptr);
 int		mos_exec(char * buffer);
+UINT8 	mos_execMode(UINT8 * ptr);
+
 
 BOOL 	mos_parseNumber(char * ptr, UINT24 * p_Value);
 BOOL	mos_parseString(char * ptr, char ** p_Value);
