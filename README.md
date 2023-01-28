@@ -45,8 +45,9 @@ NB:
 6. Addresses are 24-bit:
 	- `&000000 - &01FFFF`: MOS (Flash ROM)
 	- `&040000 - &0BDFFF`: User RAM
-	- `&0B0000 - &0B7FFF`: Storage for loading MOS star command executables off SD card 
-	- `&0BC000 - 0BFFFFF`: Global heap and stack
+	- `&0B0000 - &0B7FFF`: Storage for loading MOS star command executables off SD card
+        - `&0B8000 - &0BBFFF`: User RAM for MOS star commands
+	- `&0BC000 - &0BFFFF`: Global heap and stack
 7. The RUN command checks a header embedded from byte 64 of the executable and can run either Z80 or ADL mode executables 
 8. MOS will also search the `mos` folder on the SD card for any executables, and will run those like built-in MOS commands
 
