@@ -34,6 +34,7 @@ From version 1.02 of MOS, a `mos` folder needs to be created in the root of the 
 * `RENAME filename1 filename2`: Rename a file
 * `JMP addr`: Jump to the specified address in memory
 * `SET option value`: Set a system option
+* `VDU <char1> <char2> ... <charN>`: Write a stream of characters to the VDP
 
 NB:
 
@@ -52,7 +53,17 @@ NB:
 
 ### System options
 
-`SET KEYBOARD n`: Set the keyboard layout (0: UK, 1: US)
+`SET KEYBOARD n`: Set the keyboard layout
+
+- 0: UK
+- 1: US
+- 2: German
+- 3: Italian
+- 4: Spanish
+- 5: French
+- 6: Belgian
+- 7: Norwegian
+- 8: Japanese
 
 ### The autoexec.txt file
 
