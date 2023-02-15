@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	19/11/2022
+ * Last Updated:	14/02/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -20,6 +20,7 @@
  * 08/11/2022:		Fixed return value bug in mos_cmdRUN
  * 13/11/2022:		Case insensitive command processing with abbreviations; mos_exec now runs commands off SD card
  * 19/11/2022:		Added support for passing params to executables & ADL mode
+ * 14/02/2023:		Added mos_cmdVDU, support for more keyboard layouts in mos_cmdSET
  */
 
 #include <eZ80.h>
@@ -60,6 +61,7 @@ static t_mosCommand mosCommands[] = {
 	{ "RENAME",	&mos_cmdREN },
 	{ "MKDIR", 	&mos_cmdMKDIR },
 	{ "SET",	&mos_cmdSET },
+	{ "VDU",	&mos_cmdVDU },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -523,7 +525,7 @@ int mos_cmdSET(char * ptr) {
 	) {
 		return 19; // Bad Parameter
 	}
-	if(strcmp(command, "KEYBOARD") == 0 && value < 2) {
+	if(strcmp(command, "KEYBOARD") == 0 && value <= 8) {
 		putch(0x17);
 		putch(0x00);
 		putch(0x01);
@@ -531,6 +533,24 @@ int mos_cmdSET(char * ptr) {
 		return 0;
 	}
 	return 19; // Bad Parameter
+}
+
+// VDU <char1> <char2> ... <charN>
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int	mos_cmdVDU(char *ptr) {
+	UINT24 	value;
+	
+	while(mos_parseNumber(NULL, &value)) {
+		if(value > 255) {
+			return 19;	// Bad Parameter
+		}
+		putch(value);
+	}
+	return 0;
 }
 
 // Load a file from SD card to memory
