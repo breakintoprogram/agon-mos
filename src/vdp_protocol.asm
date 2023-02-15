@@ -2,12 +2,13 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	18/09/2022
+; Last Updated:	13/02/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
 ; 18/08/2022:	Added vpd_protocol_SCRCHAR, vpd_protocol_POINT, vdp_protocol_AUDIO, bounds checking for protocol
 ; 18/09/2022:	Added vdp_protocol_MODE
+; 13/02/2023:	Bug fix vpd_protocol_MODE now returns correct scrheight
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -218,9 +219,9 @@ vdp_protocol_MODE:	LD		A, (_vdp_protocol_data+0)
 			LD		(_scrwidth), A
 			LD		A, (_vdp_protocol_data+1)
 			LD		(_scrwidth+1), A
-			LD		HL, (_vdp_protocol_data+2)
+			LD		A, (_vdp_protocol_data+2)
 			LD		(_scrheight), A
-			LD		HL, (_vdp_protocol_data+3)
+			LD		A, (_vdp_protocol_data+3)
 			LD		(_scrheight+1), A
 			LD		A, (_vdp_protocol_data+4)
 			LD		(_scrcols), A
