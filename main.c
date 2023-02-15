@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	13/11/2022
+ * Last Updated:	11/02/2023
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -17,6 +17,7 @@
  * 03/10/2022:		Version 1.01: Added SET command, tweaked error handling
  * 20/10/2022:					+ Tweaked error handling
  * 13/11/2022:		Version 1.02
+ * 11/02/2023		Version 1.03
  */
 
 #include <eZ80.h>
@@ -33,7 +34,7 @@
 #include "mos.h"
 
 #define		MOS_version		1
-#define		MOS_revision 	2
+#define		MOS_revision 	3
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -71,7 +72,7 @@ void init_interrupts(void) {
 int main(void) {
 	UART 	pUART;
 
-	pUART.baudRate = 384000;
+	pUART.baudRate = 384000; 
 	pUART.dataBits = 8;
 	pUART.stopBits = 1;
 	pUART.parity = PAR_NOPARITY;
