@@ -96,11 +96,30 @@ I will review this policy once the code is approaching live status and I have ti
 
 ### Build
 
-The eZ80 is programmed via the ZDI connector on the left-hand side of the board. This requires a Zilog USB Smart Cable (part number ZUSBSC00100ZACG) that can be purchased from online stockists such as Mouser or RS Components. Note that at time of writing (July 2022) there are lead times for this cable.
+The eZ80 is programmed via the ZDI connector on the left-hand side of the board. This requires a Zilog Smart Cable that can be purchased from online stockists such as Mouser or RS Components.
 
-Important! Make sure you get that exact model of cable; there are variants for the Zilog Encore CPU that look similar, but are not compatible with the eZ80 CPU.
+There are three compatible cables with the following part numbers:
 
-In addition to the cable, you will need to download the free ZDS II tools ([product ID SD00063](https://zilog.com/index.php?option=com_zcm&task=view&soft_id=38&Itemid=74)). Note that this is only available for Windows.
+- `ZUSBSC00100ZACG`: USB Smart Cable (discontinued)
+- `ZUSBASC0200ZACG`: USB Smart Cable (in stock - this requires ZDS II version 5.3.5)
+- `ZENETSC0100ZACG`: Ethernet Smart Cable (in stock)
+
+Important! Make sure you get the exact model of cable; there are variants for the Zilog Encore CPU that have similar part numbers, but are not compatible with the Acclaim! eZ80 CPU.
+
+You can download the ZDS II tools for free via these links. The software contains an IDE, Debugger, C Compiler and eZ80 Assembler.
+
+- [Zilog ZDS II Tools version 5.3.4](https://zilog.com/index.php?option=com_zcm&task=view&soft_id=38&Itemid=74)
+- [Zilog ZDS II Tools version 5.3.5](https://zilog.com/index.php?option=com_zcm&task=view&soft_id=54&Itemid=74)
+
+NB:
+
+- The tools are only available for Windows PC.
+- The tools are compatible with Wine on Linux / OSX, but the USB Smart Cable drivers do not work
+- The Ethernet Smart Cable may be compatible with the tools running on Wine, though this combination has not been tested by me
+
+I currently build the official Quark software on a Windows XP KVM running on Ubuntu 20.04 LTS, using ZDS II Tools version 5.3.4, connecting to the Agon with the discontinued USB smart cable.
+
+Other options for developing C and eZ80 on the Agon are available. Please check the [Agon Programmers Group on Facebook](https://www.facebook.com/groups/667325088311886) for more information.
 
 Any custom settings for Agon development is contained within the project files, so no further configuration will need to be done.
 
