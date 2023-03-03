@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	13/10/2022
+; Last Updated:	23/02/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -11,6 +11,7 @@
 ; 05/09/2022:	Added mos_ren, vdp_pflag_mode
 ; 24/09/2022:	Added mos_getError, mos_mkdir
 ; 13/10/2022:	Added mos_oscli
+; 23/02/2023:	Added more sysvars, fixed typo in sysvar_audioSuccess, offsets for sysvar_scrCols, sysvar_scrRows
 
 ; MOS high level functions
 ;
@@ -95,16 +96,21 @@ fa_open_append:		EQU	30h
 ; System variable indexes for api_sysvars
 ; Index into _sysvars in globals.asm
 ;
-sysvar_time:		EQU	00h
-sysvar_vpd_pflags:	EQU	04h
-sysvar_keycode:		EQU	05h
-sysvar_keymods:		EQU	06h
-sysvar_cursorX:		EQU	07h
-sysvar_cursorY:		EQU	08h
-sysvar_scrchar:		EQU	09h
-sysvar_scrpixel:	EQU	0Ah
-sysvar_audioChannel:	EQU	0Dh
-syscar_audioSuccess:	EQU	0Eh
+sysvar_time:		EQU	00h	; 4: Clock timer in centiseconds (incremented by 2 every VBLANK)
+sysvar_vpd_pflags:	EQU	04h	; 1: Flags to indicate completion of VDP commands
+sysvar_keycode:		EQU	05h	; 1: ASCII keycode, or 0 if no key is pressed
+sysvar_keymods:		EQU	06h	; 1: Keycode modifiers
+sysvar_cursorX:		EQU	07h	; 1: Cursor X position
+sysvar_cursorY:		EQU	08h	; 1: Cursor Y position
+sysvar_scrchar:		EQU	09h	; 1: Character read from screen
+sysvar_scrpixel:	EQU	0Ah	; 3: Pixel data read from screen (R,B,G)
+sysvar_audioChannel:	EQU	0Dh	; 1: Audio channel 
+sysvar_audioSuccess:	EQU	0Eh	; 1: Audio channel note queued (0 = no, 1 = yes)
+sysvar_scrWidth:	EQU	0Fh	; 2: Screen width in pixels
+sysvar_scrHeight:	EQU	11h	; 2: Screen height in pixels
+sysvar_scrCols:		EQU	13h	; 1: Screen columns in characters
+sysvar_scrRows:		EQU	14h	; 1: Screen rows in characters
+sysvar_scrColours:	EQU	15h	; 1: Number of colours displayed
 	
 ; Flags for the VPD protocol
 ;
