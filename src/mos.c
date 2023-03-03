@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	14/02/2023
+ * Last Updated:	20/02/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -21,6 +21,7 @@
  * 13/11/2022:		Case insensitive command processing with abbreviations; mos_exec now runs commands off SD card
  * 19/11/2022:		Added support for passing params to executables & ADL mode
  * 14/02/2023:		Added mos_cmdVDU, support for more keyboard layouts in mos_cmdSET
+ * 20/02/2023:		Function mos_getkey now returns a BYTE
  */
 
 #include <eZ80.h>
@@ -105,7 +106,7 @@ void mos_error(int error) {
 // Returns:
 // - ASCII keycode
 //
-char mos_getkey() {
+BYTE mos_getkey() {
 	char ch = 0;
 	while(ch == 0) {		// Loop whilst no key pressed
 		ch = keycode;		// Variable keycode is updated by interrupt

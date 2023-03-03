@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	14/02/2023
+ * Last Updated:	20/02/2023
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -19,6 +19,7 @@
  * 13/11/2022:		Added mos_cmp
  * 21/11/2022:		Added support for passing params to executables & ADL mode
  * 14/02/2023:		Added mos_cmdVDU
+ * 20/02/2023:		Function mos_getkey now returns a BYTE
  */
 
 #ifndef MOS_H
@@ -38,7 +39,7 @@ typedef struct {
 
 void 	mos_error(int error);
 
-char	mos_getkey(void);
+BYTE	mos_getkey(void);
 UINT24	mos_input(char * buffer, int bufferLength);
 void *	mos_getCommand(char * ptr);
 BOOL 	mos_cmp(char *p1, char *p2);
