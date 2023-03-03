@@ -2,10 +2,11 @@
  * Title:			AGON MOS - MOS line editor
  * Author:			Dean Belfield
  * Created:			18/09/2022
- * Last Updated:	28/09/2022
+ * Last Updated:	20/02/2023
  * 
  * Modinfo:
  * 28/09/2022:		Added clear parameter to mos_EDITLINE
+ * 20/02/2023:		Fixed mos_EDITLINE to handle the full CP-1252 character set
  */
 
 #include <eZ80.h>
@@ -120,11 +121,11 @@ BOOL deleteCharacter(char *buffer, char c, int insertPos, int len) {
 // - The exit key pressed (ESC or CR)
 //
 UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
-	char key = 0;
+	BYTE key = 0;
 	int  limit = bufferLength - 1;
 	int	 insertPos;
 	int  len;
-
+	
 	getModeInformation();
 	
 	if(clear) {
@@ -140,7 +141,7 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 		len = strlen(buffer);
 		key = mos_getkey();
 		if(key > 0) {
-			if(key >= 32 && key <= 126) {
+			if(key >= 0x20 && key != 0x7F) {
 				if(insertCharacter(buffer, key, insertPos, len, limit)) {
 					insertPos++;
 				}
