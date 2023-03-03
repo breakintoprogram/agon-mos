@@ -2,13 +2,14 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	13/02/2023
+; Last Updated:	23/02/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
 ; 18/08/2022:	Added vpd_protocol_SCRCHAR, vpd_protocol_POINT, vdp_protocol_AUDIO, bounds checking for protocol
 ; 18/09/2022:	Added vdp_protocol_MODE
 ; 13/02/2023:	Bug fix vpd_protocol_MODE now returns correct scrheight
+; 23/02/2023:	vdp_protocol_MODE now returns number of screen colours
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -32,6 +33,7 @@
 			XREF	_scrheight
 			XREF	_scrcols
 			XREF	_scrrows
+			XREF	_scrcolours
 			XREF	_vpd_protocol_flags
 			XREF	_vdp_protocol_state
 			XREF	_vdp_protocol_cmd
@@ -206,12 +208,13 @@ vdp_protocol_AUDIO:	LD		A, (_vdp_protocol_data+0)
 			RET
 			
 ; Screen mode details
-; Received after VDU 23,0,6
+; Received after VDU 23,0,6 or VDU 17, n
 ;
 ; Word: Screen width in pixels
 ; Word: Screen height in pixels
 ; Byte: Screen width in characters
 ; Byte: Screen height in characters
+; Byte: Number of colours
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
@@ -227,6 +230,8 @@ vdp_protocol_MODE:	LD		A, (_vdp_protocol_data+0)
 			LD		(_scrcols), A
 			LD		A, (_vdp_protocol_data+5)
 			LD		(_scrrows), A
+			LD		A, (_vdp_protocol_data+6)
+			LD		(_scrcolours), A
 			LD		A, (_vpd_protocol_flags)
 			OR		VDPP_FLAG_MODE
 			LD		(_vpd_protocol_flags), A			
