@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	23/02/2023
+; Last Updated:	04/03/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -12,6 +12,7 @@
 ; 24/09/2022:	Added mos_getError, mos_mkdir
 ; 13/10/2022:	Added mos_oscli
 ; 23/02/2023:	Added more sysvars, fixed typo in sysvar_audioSuccess, offsets for sysvar_scrCols, sysvar_scrRows
+; 04/03/2023:	Added sysvar_scrpixelIndex
 
 ; MOS high level functions
 ;
@@ -111,6 +112,7 @@ sysvar_scrHeight:	EQU	11h	; 2: Screen height in pixels
 sysvar_scrCols:		EQU	13h	; 1: Screen columns in characters
 sysvar_scrRows:		EQU	14h	; 1: Screen rows in characters
 sysvar_scrColours:	EQU	15h	; 1: Number of colours displayed
+sysvar_scrpixelIndex:	EQU	16h	; 1: Index of pixel data read from screen
 	
 ; Flags for the VPD protocol
 ;
