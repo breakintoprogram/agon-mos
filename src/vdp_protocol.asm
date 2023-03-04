@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	23/02/2023
+; Last Updated:	04/03/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
@@ -10,6 +10,7 @@
 ; 18/09/2022:	Added vdp_protocol_MODE
 ; 13/02/2023:	Bug fix vpd_protocol_MODE now returns correct scrheight
 ; 23/02/2023:	vdp_protocol_MODE now returns number of screen colours
+; 04/03/2023:	Added _scrpixelIndex to vpd_protocol_POINT
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -34,6 +35,7 @@
 			XREF	_scrcols
 			XREF	_scrrows
 			XREF	_scrcolours
+			XREF	_scrpixelIndex
 			XREF	_vpd_protocol_flags
 			XREF	_vdp_protocol_state
 			XREF	_vdp_protocol_cmd
@@ -180,11 +182,14 @@ vpd_protocol_SCRCHAR:	LD		A, (_vdp_protocol_data+0)
 ; Byte: Red component of read pixel
 ; Byte: Green component of read pixel
 ; Byte: Blue component of read pixel
+; Byte: The palette index
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
 vdp_protocol_POINT:	LD		HL, (_vdp_protocol_data+0)
 			LD		(_scrpixel), HL
+			LD		A, (_vdp_protocol_data+3)
+			LD		(_scrpixelIndex), A
 			LD		A, (_vpd_protocol_flags)
 			OR		VDPP_FLAG_POINT
 			LD		(_vpd_protocol_flags), A
