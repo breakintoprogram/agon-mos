@@ -17,7 +17,7 @@
  * 03/10/2022:		Version 1.01: Added SET command, tweaked error handling
  * 20/10/2022:					+ Tweaked error handling
  * 13/11/2022:		Version 1.02
- * 11/02/2023		Version 1.03
+ * 11/02/2023		Version 1.03: SD now uses timer0, does not require interrupt
  */
 
 #include <eZ80.h>
@@ -31,6 +31,7 @@
 #include "spi.h"
 #include "timer.h"
 #include "ff.h"
+#include "clock.h"
 #include "mos.h"
 
 #define		MOS_version		1
@@ -39,7 +40,6 @@
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
 extern void 	vblank_handler(void);
-extern void 	timer2_handler(void);
 extern void 	uart0_handler(void);
 
 extern char coldBoot;				// 1 = cold boot, 0 = warm boot
@@ -63,7 +63,6 @@ void wait_ESP32(void) {
 //
 void init_interrupts(void) {
 	set_vector(PORTB1_IVECT, vblank_handler); 	// 0x32
-	set_vector(PRT2_IVECT, timer2_handler);		// 0x0E
 	set_vector(UART0_IVECT, uart0_handler);		// 0x18
 }
 
@@ -79,7 +78,7 @@ int main(void) {
 
 	DI();											// Ensure interrupts are disabled before we do anything
 	init_interrupts();								// Initialise the interrupt vectors
-	init_timer2(1);									// Initialise Timer 2 @ 1ms interval
+	init_rtc();										// Initialise the real time clock
 	init_spi();										// Initialise SPI comms for the SD card interface
 	init_UART0();									// Initialise UART0 for the ESP32 interface
 	open_UART0(&pUART);								// Open the UART 
