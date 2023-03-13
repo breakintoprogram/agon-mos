@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	04/03/2023
+; Last Updated:	09/03/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
@@ -11,6 +11,7 @@
 ; 13/02/2023:	Bug fix vpd_protocol_MODE now returns correct scrheight
 ; 23/02/2023:	vdp_protocol_MODE now returns number of screen colours
 ; 04/03/2023:	Added _scrpixelIndex to vpd_protocol_POINT
+; 09/03/2023:	Added FabGL virtual key data to vdp_protocol_KEY, reset is now CTRL+ALT+DEL
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -21,9 +22,12 @@
 			SEGMENT .STARTUP
 			
 			XDEF	vdp_protocol
-			
+
+			XREF	_keyascii
 			XREF	_keycode
 			XREF	_keymods
+			XREF	_keydown
+			XREF	_keycount
 			XREF	_cursorX
 			XREF	_cursorY
 			XREF	_scrchar
@@ -133,17 +137,37 @@ vdp_protocol_GP:	RET
 ; Keyboard Data
 ; Received after a keypress event in the VPD
 ;
-vdp_protocol_KEY:	LD		A, (_vdp_protocol_data + 1)
+vdp_protocol_KEY:	LD		A, (_vdp_protocol_data + 0)	; ASCII key code
+			LD		(_keyascii), A
+			LD		A, (_vdp_protocol_data + 1)	; Key modifiers (SHIFT, ALT, etc)
 			LD		(_keymods), A
-			LD		A, (_vdp_protocol_data + 0)	
-			LD		(_keycode), A			
-			CP		1Bh			; Check for ESC + CTRL + SHIFT combo
-			RET		NZ			
-			LD		A, (_keymods)		; ESC is pressed, so check CTRL + SHIFT
-			AND		03h			; Bottom two bits
-			CP		03h
-			RET		NZ	
-			RST		00h			; And reset	
+			LD		A, (_vdp_protocol_data + 3)	; Key down? (1=down, 0=up)
+			LD		(_keydown), A
+			LD		A, (_keycount)			; Increment the key event counter
+			INC		A
+			LD		(_keycount), A
+			LD		A, (_vdp_protocol_data + 2)	
+			LD		(_keycode), A
+;
+; Now check for CTRL+ALT+DEL
+;
+			CP		131				; Check for DEL (no numlock)
+			JR		Z, $F
+			CP		88				; And DEL (numlock)
+			RET		NZ
+$$:			LD		A, (_keymods)			; DEL is pressed, so check CTRL + ALT
+			AND		05h				; Bit 0 and 2
+			CP		05h
+			RET		NZ				; Exit if not pressed
+;
+; Here we're just waiting for the key to go up
+;
+			LD		A, (_keydown)			; Get key down
+			DEC		A				; Check for 0
+			JP		NZ, 0				
+			LD		(_keyascii), A			; Otherwise clear the keycode so no interaction with console 
+			LD		(_keycode), A 
+			RET
 
 ; Cursor data
 ; Received after the cursor position is updated in the VPD
