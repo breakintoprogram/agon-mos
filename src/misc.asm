@@ -2,13 +2,14 @@
 ; Title:	AGON MOS - Miscellaneous helper functions
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	19/11/2022
+; Last Updated:	09/03/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added SET_AHL24 and SET_ADE24
 ; 10/08/2022:	Optimised SET_ADE24
 ; 08/11/2022:	Fixed return value bug in exec16
 ; 19/11/2022:	Added exec24 and params for exec16/24 functions
+; 09/03/2023:	Added wait_timer0
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -24,9 +25,12 @@
 			
 			XDEF	__exec16
 			XDEF	__exec24
+			XDEF	__wait_timer0 
 			
 			XDEF	_exec16			
 			XDEF	_exec24
+			XDEF	_wait_timer0
+
 			XREF	_callSM
 			
 ; Switch on A - lookup table immediately after call
@@ -140,3 +144,19 @@ _exec16:		PUSH 	IY
 			LD	SP, IY          ; Standard epilogue
 			POP	IY
 			RET	
+
+; Wait for timer0 to hit 0
+;
+__wait_timer0:
+_wait_timer0:		PUSH	AF 
+			PUSH	BC 
+			IN0	A, (TMR0_CTL)	; Enable the timer
+			OR	3
+			OUT0	(TMR0_CTL), A
+$$:			IN0	B, (TMR0_DR_L)	; Fetch the counter L
+			IN0 	A, (TMR0_DR_H)	; And the counter H
+			OR	B 
+			JR	NZ, $B
+			POP	BC 
+			POP	AF 
+			RET
