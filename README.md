@@ -14,70 +14,6 @@ The MOS is a command line machine operating system, similar to CP/M or DOS, that
 
 It also provides an API for file I/O and other common operations for BBC Basic for Z80 and other third-party applications.
 
-### System Requirements
-
-* A 32GB or less micro-SD card formatted FAT32
-
-### The MOS folder
-
-From version 1.02 of MOS, a `mos` folder needs to be created in the root of the SD card. This is for MOS extensions that run off SD card
-
-### MOS Commands
-
-* `CAT`: Directory listing of the current directory. Aliases include `DIR` and `.`
-* `CD path`: Change current directory
-* `LOAD filename <addr>`: Load a file from the SD card to the specified address
-* `MKDIR filename`: Make a folder on the SD card
-* `SAVE filename addr size`: Save a block of memory to the SD card
-* `RUN <addr>`: Call an executable binary loaded in memory
-* `DELETE filename`: Delete a file or folder (must be empty). Aliases include `ERASE`
-* `RENAME filename1 filename2`: Rename a file
-* `JMP addr`: Jump to the specified address in memory
-* `SET option value`: Set a system option
-* `VDU <char1> <char2> ... <charN>`: Write a stream of characters to the VDP
-
-NB:
-
-1. Commands can be abbreviated with a dot, so `DELETE myfile` and `DEL. myfile` are equivalent.
-2. Commands are case-insensitive and parameters are space delimited.
-3. Optional parameters are written as `<param>`
-4. Default LOAD and RUN address is set to 0x040000
-5. Numbers are in decimal and can be prefixed by '&' for hexadecimal.
-6. Addresses are 24-bit:
-	- `&000000 - &01FFFF`: MOS (Flash ROM)
-	- `&040000 - &0BDFFF`: User RAM
-	- `&0B0000 - &0B7FFF`: Storage for loading MOS star command executables off SD card 
-	- `&0BC000 - 0BFFFFF`: Global heap and stack
-7. The RUN command checks a header embedded from byte 64 of the executable and can run either Z80 or ADL mode executables 
-8. MOS will also search the `mos` folder on the SD card for any executables, and will run those like built-in MOS commands
-
-### System options
-
-`SET KEYBOARD n`: Set the keyboard layout
-
-- 0: UK
-- 1: US
-- 2: German
-- 3: Italian
-- 4: Spanish
-- 5: French
-- 6: Belgian
-- 7: Norwegian
-- 8: Japanese
-
-### The autoexec.txt file
-
-If the MOS detects an autoexec.txt file on the root of the SD card during cold-boot, it will read the file in, and execute the MOS commands in the file sequentially from top to bottom.
-
-For example, to set keyboard to US, load BBC BASIC from the root folder, change to the test folder, then run BASIC
-
-```
-SET KEYBOARD 1
-LOAD bbcbasic
-CD test
-RUN
-```
-
 ### Loadig BBC Basic for Z80
 
 1. Download bbcbasic.bin from [agon-bbc-basic releases](https://github.com/breakintoprogram/agon-bbc-basic/releases)
@@ -122,6 +58,10 @@ I currently build the official Quark software on a Windows XP KVM running on Ubu
 Other options for developing C and eZ80 on the Agon are available. Please check the [Agon Programmers Group on Facebook](https://www.facebook.com/groups/667325088311886) for more information.
 
 Any custom settings for Agon development is contained within the project files, so no further configuration will need to be done.
+
+### Documentation
+
+The AGON documentation can now be found on the [Agon Light Documentation Wiki](https://github.com/breakintoprogram/agon-docs/wiki)
 
 ### Licenses
 
