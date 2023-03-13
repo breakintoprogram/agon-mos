@@ -2,11 +2,12 @@
  * Title:			AGON MOS - MOS line editor
  * Author:			Dean Belfield
  * Created:			18/09/2022
- * Last Updated:	20/02/2023
+ * Last Updated:	09/03/2023
  * 
  * Modinfo:
  * 28/09/2022:		Added clear parameter to mos_EDITLINE
  * 20/02/2023:		Fixed mos_EDITLINE to handle the full CP-1252 character set
+ * 09/03/2023:		Added support for virtual keys; improved editing functionality
  */
 
 #include <eZ80.h>
@@ -19,7 +20,11 @@
 #include "mos.h"
 #include "uart.h"
 
-extern volatile BYTE vpd_protocol_flags;
+extern volatile BYTE vpd_protocol_flags;		// In globals.asm
+extern volatile BYTE keyascii;					// In globals.asm
+extern volatile BYTE keycode;					// In globals.asm
+extern volatile BYTE keydown;					// In globals.asm
+extern volatile BYTE keycount;					// In globals.asm
 
 extern BYTE cursorX;
 extern BYTE cursorY;
@@ -112,6 +117,48 @@ BOOL deleteCharacter(char *buffer, char c, int insertPos, int len) {
 	return 0;
 }
 
+// Wait for a key to be pressed
+//
+void waitKey() {
+	BYTE	c;
+	do {
+		c = keycount;				
+		while(c == keycount);		// Wait for a key event
+	} while (keydown == 0);			// Loop until we get a key down value (keydown = 1)
+}
+
+// Move cursor left
+//
+void doLeftCursor() {
+	getCursorPos();
+	if(cursorX > 0) {
+		putch(0x08);
+	}
+	else {
+		while(cursorX < (scrcols - 1)) {
+			putch(0x09);
+			cursorX++;
+		}
+		putch(0x0B);
+	}
+}
+
+// Move Cursor Right
+// 
+void doRightCursor() {
+	getCursorPos();
+	if(cursorX < (scrcols - 1)) {
+		putch(0x09);
+	}
+	else {
+		while(cursorX > 0) {
+			putch(0x08);
+			cursorX--;
+		}
+		putch(0x0A);
+	}
+}
+
 // The main line edit function
 // Parameters:
 // - buffer: Pointer to the line edit buffer
@@ -121,10 +168,11 @@ BOOL deleteCharacter(char *buffer, char c, int insertPos, int len) {
 // - The exit key pressed (ESC or CR)
 //
 UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
-	BYTE key = 0;
+	BYTE keya = 0;
+	BYTE keyc = 0;
 	int  limit = bufferLength - 1;
 	int	 insertPos;
-	int  len;
+	int  len = 0;
 	
 	getModeInformation();
 	
@@ -137,55 +185,73 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 		insertPos = strlen(buffer);
 	}
 	
-	while(key != 13 && key != 27) {
+	while(keya != 13 && keya != 27) {
 		len = strlen(buffer);
-		key = mos_getkey();
-		if(key > 0) {
-			if(key >= 0x20 && key != 0x7F) {
-				if(insertCharacter(buffer, key, insertPos, len, limit)) {
+		waitKey();
+		keya = keyascii;
+		keyc = keycode;
+		switch(keyc) {
+			//
+			// First any extended (non-ASCII keys)
+			//
+			case 0x85: {	// HOME
+				while(insertPos > 0) {
+					doLeftCursor();
+					insertPos--;
+				}
+			} break;
+			case 0x87: {	// END
+				while(insertPos < len) {
+					doRightCursor();
 					insertPos++;
 				}
+			} break;
+			//
+			// Now the ASCII keys
+			//
+			default: {
+				if(keya > 0) {
+					if(keya >= 0x20 && keya != 0x7F) {
+						if(insertCharacter(buffer, keya, insertPos, len, limit)) {
+							insertPos++;
+						}
+					}
+					else {				
+						switch(keya) {
+							case 0x08:	{	// Cursor Left
+								if(insertPos > 0) {
+									doLeftCursor();
+									insertPos--;
+								}
+							} break;
+							case 0x15:	{	// Cursor Right
+								if(insertPos < len) {
+									doRightCursor();
+									insertPos++;
+								}
+							} break;
+							case 0x0A: {	// Cursor Down
+								if(insertPos <= (len - scrcols)) {
+									putch(0x0A);
+									insertPos += scrcols;
+								}
+							} break;
+							case 0x0B:	{	// Cursor Up
+								if(insertPos >= scrcols) {
+									putch(0x0B);
+									insertPos -= scrcols;
+								}
+							} break;
+							case 0x7F: {	// Backspace
+								if(deleteCharacter(buffer, keya, insertPos, len)) {
+									insertPos--;
+								}
+							} break;
+						}					
+					}
+				}
 			}
-			else {				
-				switch(key) {
-					case 0x08:	// Cursor Left
-						if(insertPos > 0) {
-							getCursorPos();
-							if(cursorX > 0) {
-								putch(0x08);
-								insertPos--;
-							}
-						}
-						break;
-					case 0x15:	// Cursor Right
-						if(insertPos < len) {
-							getCursorPos();
-							if(cursorX < (scrcols - 1)) {
-								putch(0x09);
-								insertPos++;
-							}
-						}
-						break;
-					case 0x0A:	// Cursor Down
-						if(insertPos <= (len - scrcols)) {
-							putch(0x0A);
-							insertPos += scrcols;
-						}
-						break;
-					case 0x0B:	// Cursor Up
-						if(insertPos >= scrcols) {
-							putch(0x0B);
-							insertPos -= scrcols;
-						}
-						break;
-					case 0x7F:	// Backspace
-						if(deleteCharacter(buffer, key, insertPos, len)) {
-							insertPos--;
-						}
-						break;
-				}					
-			}
-		}		
+		}
 	}
 	len-=insertPos;					// Now just need to cursor to end of line; get # of characters to cursor
 
@@ -195,5 +261,5 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 	}
 	while(len-- > 0) putch(0x09);	// Then cursor right for the remainder
 	
-	return key;						// Finally return the keycode (ESC or CR)
+	return keya;						// Finally return the keycode (ESC or CR)
 }
