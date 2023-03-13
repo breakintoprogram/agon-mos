@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	20/02/2023
+ * Last Updated:	12/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -22,6 +22,7 @@
  * 19/11/2022:		Added support for passing params to executables & ADL mode
  * 14/02/2023:		Added mos_cmdVDU, support for more keyboard layouts in mos_cmdSET
  * 20/02/2023:		Function mos_getkey now returns a BYTE
+ * 12/03/2023:		Renamed keycode to keyascii, keyascii now a BYTE, added mos_cmdTIME, mos_cmdCREDITS, mos_DIR now accepts a path
  */
 
 #include <eZ80.h>
@@ -35,12 +36,13 @@
 #include "config.h"
 #include "mos_editor.h"
 #include "uart.h"
+#include "clock.h"
 #include "ff.h"
 
 extern int exec16(UINT24 addr, char * params);	// In misc.asm
 extern int exec24(UINT24 addr, char * params);	// In misc.asm
 
-extern volatile char keycode;					// In globals.asm
+extern volatile BYTE keyascii;					// In globals.asm
 
 static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
 
@@ -49,20 +51,22 @@ t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 // Array of MOS commands and pointer to the C function to run
 //
 static t_mosCommand mosCommands[] = {
-	{ ".", 		&mos_cmdDIR },
-	{ "DIR",	&mos_cmdDIR },
-	{ "CAT",	&mos_cmdDIR },
-	{ "LOAD",	&mos_cmdLOAD },
-	{ "SAVE", 	&mos_cmdSAVE },
-	{ "DELETE",	&mos_cmdDEL },
-	{ "ERASE",	&mos_cmdDEL },
-	{ "JMP",	&mos_cmdJMP },
-	{ "RUN", 	&mos_cmdRUN },
-	{ "CD", 	&mos_cmdCD },
-	{ "RENAME",	&mos_cmdREN },
-	{ "MKDIR", 	&mos_cmdMKDIR },
-	{ "SET",	&mos_cmdSET },
-	{ "VDU",	&mos_cmdVDU },
+	{ ".", 			&mos_cmdDIR },
+	{ "DIR",		&mos_cmdDIR },
+	{ "CAT",		&mos_cmdDIR },
+	{ "LOAD",		&mos_cmdLOAD },
+	{ "SAVE", 		&mos_cmdSAVE },
+	{ "DELETE",		&mos_cmdDEL },
+	{ "ERASE",		&mos_cmdDEL },
+	{ "JMP",		&mos_cmdJMP },
+	{ "RUN", 		&mos_cmdRUN },
+	{ "CD", 		&mos_cmdCD },
+	{ "RENAME",		&mos_cmdREN },
+	{ "MKDIR", 		&mos_cmdMKDIR },
+	{ "SET",		&mos_cmdSET },
+	{ "VDU",		&mos_cmdVDU },
+	{ "TIME", 		&mos_cmdTIME },
+	{ "CREDITS",	&mos_cmdCREDITS },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -107,11 +111,11 @@ void mos_error(int error) {
 // - ASCII keycode
 //
 BYTE mos_getkey() {
-	char ch = 0;
+	BYTE ch = 0;
 	while(ch == 0) {		// Loop whilst no key pressed
-		ch = keycode;		// Variable keycode is updated by interrupt
+		ch = keyascii;		// Variable keyascii is updated by interrupt
 	}
-	keycode = 0;			// Reset keycode to debounce the key
+	keyascii = 0;			// Reset keycode to debounce the key
 	return ch;
 }
 
@@ -280,26 +284,31 @@ int mos_exec(char * buffer) {
 		if(func != 0) {
 			fr = func(ptr);
 		}
-		else {
-			sprintf(path, "/mos/%s.bin", ptr);
-			fr = mos_LOAD(path, MOS_starLoadAddress, 0);
-			if(fr == 0) {
-				mode = mos_execMode((UINT8 *)MOS_starLoadAddress);
-				switch(mode) {
-					case 0:		// Z80 mode
-						fr = exec16(MOS_starLoadAddress, mos_strtok_ptr);
-						break;
-					case 1: 	// ADL mode
-						fr = exec24(MOS_starLoadAddress, mos_strtok_ptr);
-						break;	
-					default:	// Unrecognised header
-						fr = 21;
-						break;
-				}
+		else {		
+			if(strlen(ptr) > 246) {	// Maximum command length (to prevent buffer overrun)
+				fr = 20;
 			}
 			else {
-				if(fr == 4) {
-					fr = 20;
+				sprintf(path, "/mos/%s.bin", ptr);
+				fr = mos_LOAD(path, MOS_starLoadAddress, 0);
+				if(fr == 0) {
+					mode = mos_execMode((UINT8 *)MOS_starLoadAddress);
+					switch(mode) {
+						case 0:		// Z80 mode
+							fr = exec16(MOS_starLoadAddress, mos_strtok_ptr);
+							break;
+						case 1: 	// ADL mode
+							fr = exec24(MOS_starLoadAddress, mos_strtok_ptr);
+							break;	
+						default:	// Unrecognised header
+							fr = 21;
+							break;
+					}
+				}
+				else {
+					if(fr == 4) {
+						fr = 20;
+					}
 				}
 			}
 		}
@@ -332,10 +341,12 @@ UINT8 mos_execMode(UINT8 * ptr) {
 // - MOS error code
 //
 int mos_cmdDIR(char * ptr) {	
-	FRESULT	fr;
+	char	*path;
 
-	fr = mos_DIR();
-	return fr;
+	if(!mos_parseString(NULL, &path)) {
+		return mos_DIR(".");
+	}
+	return mos_DIR(path);
 }
 
 // LOAD <filename> <addr> command
@@ -554,6 +565,29 @@ int	mos_cmdVDU(char *ptr) {
 	return 0;
 }
 
+// TIME
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdTIME(char *ptr) {
+	return 0;
+}
+
+// CREDITS
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdCREDITS(char *ptr) {
+	printf("FabGL 1.0.8 (c) 2019-2022 by Fabrizio Di Vittorio\n\r");
+	printf("FatFS R0.14b (c) 2021 ChaN\n\r");
+	printf("\n\r");
+	return 0;
+}
+
 // Load a file from SD card to memory
 // Parameters:
 // - filename: Path of file to load
@@ -616,7 +650,7 @@ UINT24	mos_CD(char *path) {
 // Returns:
 // - FatFS return code
 // 
-UINT24	mos_DIR(void) {
+UINT24	mos_DIR(char * path) {
 	FRESULT	fr;
 	DIR	  	dir;
 	static 	FILINFO  fno;
@@ -636,7 +670,7 @@ UINT24	mos_DIR(void) {
 	}
 	printf("\n\r\n\r");
 	
-	fr = f_opendir(&dir, ".");
+	fr = f_opendir(&dir, path);
 	if(fr == FR_OK) {
 		for(;;) {
 			fr = f_readdir(&dir, &fno);

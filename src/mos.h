@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	20/02/2023
+ * Last Updated:	09/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -20,6 +20,7 @@
  * 21/11/2022:		Added support for passing params to executables & ADL mode
  * 14/02/2023:		Added mos_cmdVDU
  * 20/02/2023:		Function mos_getkey now returns a BYTE
+ * 09/03/2023:		Added mos_cmdTIME, mos_cmdCREDITS, mos_DIR now accepts a path
  */
 
 #ifndef MOS_H
@@ -63,11 +64,13 @@ int		mos_cmdREN(char *ptr);
 int		mos_cmdMKDIR(char *ptr);
 int		mos_cmdSET(char *ptr);
 int		mos_cmdVDU(char *ptr);
+int		mos_cmdTIME(char *ptr);
+int		mos_cmdCREDITS(char *ptr);
 
 UINT24	mos_LOAD(char * filename, INT24 address, INT24 size);
 UINT24	mos_SAVE(char * filename, INT24 address, INT24 size);
 UINT24	mos_CD(char * path);
-UINT24	mos_DIR(void);
+UINT24	mos_DIR(char * path);
 UINT24	mos_DEL(char * filename);
 UINT24 	mos_REN(char * filename1, char * filename2);
 UINT24	mos_MKDIR(char * filename);
