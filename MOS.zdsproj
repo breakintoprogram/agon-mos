@@ -1,4 +1,4 @@
-<project type="Executable" project-type="Standard" configuration="Debug" created-by="d:5.3.0:19052909" modified-by="d:5.3.0:19052909" ZDSII="ZDSII - eZ80Acclaim! 5.3.4 (Build 19112104)">
+<project type="Executable" project-type="Standard" configuration="Debug" created-by="d:5.3.0:19052909" modified-by="d:5.3.0:23020901" ZDSII="ZDSII - eZ80Acclaim! 5.3.5 (Build 23020901)">
 <cpu>eZ80F92</cpu>
 
 <!-- file information -->
@@ -11,6 +11,8 @@
 <file filter-key="">src\misc.asm</file>
 <file filter-key="">src\vdp_protocol.asm</file>
 <file filter-key="">src\interrupts.asm</file>
+<file filter-key="">src\clock.c</file>
+<file filter-key="">src\rtc.asm</file>
 <file filter-key="">src\timer.c</file>
 <file filter-key="">src\sd.c</file>
 <file filter-key="">src\spi.c</file>
@@ -74,7 +76,7 @@
 </tool>
 <tool name="FlashProgrammer">
 <options>
-<option name="erasebeforeburn" type="boolean" change-action="none">true</option>
+<option name="erasebeforeburn" type="boolean" change-action="none">false</option>
 <option name="eraseinfopage" type="boolean" change-action="none">false</option>
 <option name="enableinfopage" type="boolean" change-action="none">false</option>
 <option name="includeserial" type="boolean" change-action="none">false</option>
