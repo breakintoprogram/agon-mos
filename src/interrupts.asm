@@ -2,9 +2,10 @@
 ; Title:	AGON MOS - Interrupt handlers
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	03/08/2022
+; Last Updated:	09/03/2023
 ;
 ; Modinfo:
+; 09/03/2023:	No longer uses timer interrupt 0 for SD card timing
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -15,10 +16,8 @@
 			SEGMENT .STARTUP
 			
 			XDEF	_vblank_handler
-			XDEF	_timer2_handler
 			XDEF	_uart0_handler
 			
-			XREF	_timer2
 			XREF	_clock
 			XREF	_vdp_protocol_data
 			
@@ -47,20 +46,6 @@ _vblank_handler:	DI
 			POP		BC
 			POP		AF
 			EI	
-			RETI.L
-			
-; AGON Timer 2 Interrupt Handler
-;
-_timer2_handler:	DI
-			PUSH		AF
-			IN0  		A,(TMR2_CTL)		; Clear the timer interrupt
-			PUSH		BC
-			LD		BC, (_timer2)		; Increment the delay timer
-			INC		BC
-			LD		(_timer2), BC
-			POP		BC
-			POP		AF
-			EI
 			RETI.L
 			
 ; AGON UART0 Interrupt Handler
