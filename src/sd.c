@@ -3,13 +3,14 @@
  * Author:			RJH
  * Modified by:		Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	13/07/2022
+ * Last Updated:	09/03/2023
  * 
  * Code taken from this article: http://www.rjhcoding.com/avrc-sd-interface-1.php
  *
  * Modinfo:
  * 11/07/2022:		Now includes defines.h
  * 13/07/2022:		Fixed bug in SD_writeBlocks
+ * 09/03/2023:      Now uses wait_timer0
  */
 
 #include <eZ80.h>
@@ -126,7 +127,7 @@ void SD_powerUpSeq() {
 	int i;
 //  printf("SD_powerUpSeq()\n");
     SD_CS_disable();
-	delayms(10);
+	wait_timer0();
 	spi_transfer(0xFF);
     SD_CS_disable();
 	for(i = 0; i < SD_INIT_CYCLES; i++) {
@@ -316,7 +317,9 @@ BYTE SD_readSingleBlock(DWORD addr, BYTE *buf, BYTE *token)
 
 BYTE SD_init(void) {
 	BYTE res[5], cmdAttempts = 0;
-	
+
+	init_timer0(10, 16, 0x00);  // 10ms timer for delay
+
 	SD_powerUpSeq();
 	//
     // Command card to idle
@@ -357,7 +360,7 @@ BYTE SD_init(void) {
 		//
         // Wait
 		//
-        delayms(10);
+        wait_timer0();
         cmdAttempts++;
     }
     while(res[0] != SD_READY);
@@ -365,6 +368,10 @@ BYTE SD_init(void) {
     // Read OCR
 	//
     SD_readOCR(res);
+    //
+    // Disable 10ms timer
+    //
+   	enable_timer0(0);
 	//
     // Check card is ready
 	//
