@@ -2,13 +2,14 @@
 ; Title:	AGON MOS - Equs
 ; Author:	Dean Belfield
 ; Created:	15/07/2022
-; Last Updated:	20/08/2022
+; Last Updated:	09/03/2023
 ;
 ; Modinfo:
 ; 24/07/2022:	Added TMR2_CTL
 ; 03/08/2022:	Added UART0_BUFFERLEN
 ; 20/08/2022:	Added some VDP protocol flags
 ; 18/09/2022:	Added VDPP_FLAG_MODE
+; 09/03/2023:	Renamed TMR2_CTL to TMR0_CTL
 
 ; MOS specific
 ;
@@ -90,4 +91,8 @@ PD7_IVECT    		EQU   	5Eh
 
 ; For vectors16.asm
 ;
-TMR2_CTL		EQU	86h
+TMR0_CTL		EQU	80h
+TMR0_DR_L               EQU     81h
+TMR0_RR_L               EQU     81h
+TMR0_DR_H               EQU     82h
+TMR0_RR_H               EQU     83h
