@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	20/10/2022
+; Last Updated:	13/03/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -12,6 +12,7 @@
 ; 24/09/2022:	Error codes returned for MOS commands
 ; 13/10/2022:	Added mos_OSCLI and supporting code
 ; 20/10/2022:	Tweaked error handling
+; 13/03/2023:	Renamed keycode to keyascii, fixed mos_api_getkey, added parameter to mos_api_dir
 
 			.ASSUME	ADL = 1
 			
@@ -40,7 +41,10 @@
 			XREF	_mos_GETERROR
 			XREF	_mos_MKDIR
 			
-			XREF	_keycode
+			XREF	_keyascii
+			XREF	_keycount
+			XREF	_keydown
+
 			XREF	_sysvars
 			
 ; Call a MOS API function
@@ -114,11 +118,16 @@ $$:			AND	7Fh			; Else remove the top bit
 ; Returns:
 ;  A: ASCII code of key pressed, or 0 if no key pressed
 ;
-mos_api_getkey:		LD	A, (_keycode)
-			PUSH	AF
-			XOR	A
-			LD	(_keycode), A
-			POP	AF
+mos_api_getkey:		PUSH	HL
+			LD	HL, _keycount	
+mos_api_getkey_1:	LD	A, (HL)			; Wait for a key to be pressed
+$$:			CP	(HL)
+			JR	Z, $B
+			LD	A, (_keydown)		; Check if key is down
+			OR	A 
+			JR	Z, mos_api_getkey_1	; No, so loop
+			POP	HL 
+			LD	A, (_keyascii)		; Get the key code
 			RET
 			
 ; Load an area of memory from a file.
@@ -202,10 +211,20 @@ mos_api_cd:		LD	A, MB		; Check if MBASE is 0
 			RET
 
 ; Directory listing
+; HLU: Address of path (zero terminated)
 ; Returns:
 ; - A: File error, or 0 if OK
 ;	
-mos_api_dir:		PUSH	HL
+mos_api_dir:		LD	A, MB		; Check if MBASE is 0
+			OR	A, A
+;
+; Now we need to mod HLU to include the MBASE in the U byte
+;
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
+;
+; Finally, we can run the command
+;
+			PUSH	HL		; char * path
 			CALL	_mos_DIR
 			LD	A, L		; Return value in HLU, put in A
 			POP	HL
