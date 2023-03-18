@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	09/03/2023
+; Last Updated:	15/03/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
@@ -12,6 +12,7 @@
 ; 23/02/2023:	vdp_protocol_MODE now returns number of screen colours
 ; 04/03/2023:	Added _scrpixelIndex to vpd_protocol_POINT
 ; 09/03/2023:	Added FabGL virtual key data to vdp_protocol_KEY, reset is now CTRL+ALT+DEL
+; 15/03/2023:	Added vdp_protocol_RTC
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -40,6 +41,7 @@
 			XREF	_scrrows
 			XREF	_scrcolours
 			XREF	_scrpixelIndex
+			XREF	_rtc
 			XREF	_vpd_protocol_flags
 			XREF	_vdp_protocol_state
 			XREF	_vdp_protocol_cmd
@@ -127,6 +129,7 @@ vdp_protocol_vector:	JP	vdp_protocol_GP
 			JP	vdp_protocol_POINT
 			JP	vdp_protocol_AUDIO
 			JP	vdp_protocol_MODE
+			JP	vdp_protocol_RTC
 ;
 vdp_protocol_vesize:	EQU	($-vdp_protocol_vector)/4
 	
@@ -263,5 +266,28 @@ vdp_protocol_MODE:	LD		A, (_vdp_protocol_data+0)
 			LD		(_scrcolours), A
 			LD		A, (_vpd_protocol_flags)
 			OR		VDPP_FLAG_MODE
+			LD		(_vpd_protocol_flags), A			
+			RET
+
+; RTC
+; Received after VDU 23,0,7
+;
+; Byte: Year (offset from 1970)
+; Byte: Month (0-11)
+; Byte: Day (1-31)
+; Byte: Day of Year (0-365)
+; Byte: Day of Week (0-6)
+; Byte: Hour (0-23)
+; Byte: Minute (0-59)
+; Byte: Second (0-59)
+;
+; Sets vpd_protocol_flags to flag receipt to apps
+;
+vdp_protocol_RTC:	LD		HL, _vdp_protocol_data
+			LD		DE, _rtc 
+			LD		BC,  8
+			LDIR 
+			LD		A, (_vpd_protocol_flags)
+			OR		VDPP_FLAG_RTC
 			LD		(_vpd_protocol_flags), A			
 			RET
