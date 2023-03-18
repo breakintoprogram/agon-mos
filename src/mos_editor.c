@@ -2,12 +2,13 @@
  * Title:			AGON MOS - MOS line editor
  * Author:			Dean Belfield
  * Created:			18/09/2022
- * Last Updated:	09/03/2023
+ * Last Updated:	14/03/2023
  * 
  * Modinfo:
  * 28/09/2022:		Added clear parameter to mos_EDITLINE
  * 20/02/2023:		Fixed mos_EDITLINE to handle the full CP-1252 character set
  * 09/03/2023:		Added support for virtual keys; improved editing functionality
+ * 14/03/2023:		Tweaks ready for command history
  */
 
 #include <eZ80.h>
@@ -168,24 +169,28 @@ void doRightCursor() {
 // - The exit key pressed (ESC or CR)
 //
 UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
-	BYTE keya = 0;
-	BYTE keyc = 0;
-	int  limit = bufferLength - 1;
-	int	 insertPos;
-	int  len = 0;
+	BYTE keya = 0;					// The ASCII key	
+	BYTE keyc = 0;					// The FabGL keycode
+	BYTE keyr = 0;					// The ASCII key to return back to the calling program
+
+	int  limit = bufferLength - 1;	// Max # of characters that can be entered
+	int	 insertPos;					// The insert position
+	int  len = 0;					// Length of current input
 	
-	getModeInformation();
+	getModeInformation();			// Get the current screen dimensions
 	
-	if(clear) {
+	if(clear) {						// Clear the buffer as required
 		buffer[0] = 0;	
 		insertPos = 0;
 	}
 	else {
-		printf("%s", buffer);
-		insertPos = strlen(buffer);
+		printf("%s", buffer);		// Otherwise output the current buffer
+		insertPos = strlen(buffer);	// And set the insertpos to the end
 	}
-	
-	while(keya != 13 && keya != 27) {
+
+	// Loop until an exit key is pressed
+	//
+	while(keyr == 0) {
 		len = strlen(buffer);
 		waitKey();
 		keya = keyascii;
@@ -218,6 +223,10 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 					}
 					else {				
 						switch(keya) {
+							case 0x0D:		// Enter
+							case 0x1B:	{	// Escape
+								keyr = keya;
+							} break;
 							case 0x08:	{	// Cursor Left
 								if(insertPos > 0) {
 									doLeftCursor();
@@ -261,5 +270,5 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 	}
 	while(len-- > 0) putch(0x09);	// Then cursor right for the remainder
 	
-	return keya;						// Finally return the keycode (ESC or CR)
+	return keyr;					// Finally return the keycode
 }
