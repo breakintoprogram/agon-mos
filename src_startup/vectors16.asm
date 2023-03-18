@@ -3,7 +3,7 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	08/08/2022
+; Last Updated:	17/03/2023
 ;
 ; Modinfo:
 ; 11/07/2022:	Added RST_10 code - TX
@@ -12,6 +12,7 @@
 ; 25/07/2022:	Runs in STMIX mode
 ; 03/08/2022:	Added RST handlers, moved interrupt handlers to interrupts.asm
 ; 08/08/2022:	RST_10 now calls check_CTS before sending
+; 17/03/2023:	Added RST_18 code
 
 			INCLUDE	"../src/macros.inc"
 			INCLUDE	"../src/equs.inc"
@@ -34,6 +35,7 @@
 			XREF	mos_api
 			XREF	serial_TX
 			XREF	check_CTS
+			XREF	SET_AHL24
 
 NVECTORS 		EQU 48			; Number of interrupt vectors
 
@@ -69,8 +71,8 @@ _rst8:			JP.LIL	_rst_08_handler
 _rst10:			JP.LIL	_rst_10_handler
 			DS	3
 
-_rst18:			RET
-			DS	7
+_rst18:			JP.LIL	_rst_18_handler
+			DS	3
 		
 _rst20:			RET
 			DS	7
@@ -97,19 +99,70 @@ _nmi:			JP.LIL	__default_nmi_handler
 ; Number of vectors supported
 ;
 __nvectors:		DW NVECTORS            ; extern unsigned short _num_vectors;
-	
+
+;	
 ; AGON RST handlers
 ;
-_rst_08_handler:	CALL		mos_api
+
+; Execute an API command
+; Parameters
+; - A: The API command to run
+;
+_rst_08_handler:	CALL	mos_api
 			RET.L
 
-_rst_10_handler:	PUSH		AF
-$$:			CALL		check_CTS
-			JR		NZ, $B
-			POP		AF
-			CALL		serial_TX
-			JR		NC, _rst_10_handler
-			RET.L	
+; Output a single character to the ESP32
+; Parameters:
+; - A: The character
+;
+_rst_10_handler:	CALL	_putch
+			RET.L
+
+; Write a block of bytes out to the ESP32
+; Parameters:
+; - HLU: Buffer address
+; -  BC: Size of buffer
+; -   A: Delimiter (only if BCU = 0)
+;
+_rst_18_handler:	LD	E, A 			; Preserve the delimiter
+			LD	A, MB			; Check if MBASE is 0
+			OR	A, A 
+			CALL	NZ, SET_AHL24		; No, so create a 24-bit pointer
+			LD	A, B			; Check for BC = 0
+			OR	C 			; Yes, so run in delimited mode?
+			JR	Z, _rst_18_handler_1
+;
+; Standard loop mode
+;
+_rst_18_handler_0:	LD 	A, (HL)			; Fetch the character
+			CALL	_putch			; Output
+			INC 	HL 			; Increment the buffer pointer
+			DEC	BC 			; Decrement the loop counter
+			LD	A, B 			; Is it 0?
+			OR 	C 
+			JR	NZ, _rst_18_handler_0	; No, so loop
+			RET.L
+;
+; Delimited mode
+;
+_rst_18_handler_1:	LD 	A, (HL)			; Fetch the character
+			CP 	E 			; Is it the delimiter?
+			RET.L	Z 			; Yes, so return
+			CALL	_putch			; Output
+			INC 	HL 			; Increment the buffer pointer
+			JR 	_rst_18_handler_1	; Loop
+
+; Write character out to UART
+; Parameters:
+; - A: Character to write out
+;
+_putch:			PUSH	AF
+$$:			CALL	check_CTS
+			JR	NZ, $B
+			POP	AF
+			CALL	serial_TX
+			JR	NC, _putch
+			RET
 
 ; Default Non-Maskable Interrupt handler
 ;
