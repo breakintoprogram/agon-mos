@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	11/02/2023
+ * Last Updated:	14/13/2023
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -17,7 +17,8 @@
  * 03/10/2022:		Version 1.01: Added SET command, tweaked error handling
  * 20/10/2022:					+ Tweaked error handling
  * 13/11/2022:		Version 1.02
- * 11/02/2023		Version 1.03: SD now uses timer0, does not require interrupt
+ * 14/03/2023		Version 1.03: SD now uses timer0, does not require interrupt
+ *								+ Stubbed command history
  */
 
 #include <eZ80.h>
@@ -36,6 +37,7 @@
 
 #define		MOS_version		1
 #define		MOS_revision 	3
+#define		MOS_rc			1
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -47,6 +49,7 @@ extern volatile	char keycode;		// Keycode
 
 static FATFS 	fs;					// Handle for the file system
 static char  	cmd[256];			// Array for the command line handler
+static char		history[4][256];	// Array for the command history
 
 // Wait for the ESP32 to respond with an ESC character to signify it is ready
 // Parameters: None
@@ -88,7 +91,11 @@ int main(void) {
 	else {											// Otherwise warm boot,
 		putch(12);									// Clear the screen
 	}
-	printf("Agon Quark MOS Version %d.%02d\n\r\n\r", MOS_version, MOS_revision);	
+	printf("Agon Quark MOS Version %d.%02d", MOS_version, MOS_revision);
+	#if MOS_rc > 0
+		printf(" RC%d", MOS_rc);
+	#endif
+	printf("\n\r\n\r");
 	EI();											// Enable the interrupts now
 
 	f_mount(&fs, "", 1);							// Mount the SD card
