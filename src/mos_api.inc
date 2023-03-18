@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	08/03/2023
+; Last Updated:	15/03/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -14,6 +14,7 @@
 ; 23/02/2023:	Added more sysvars, fixed typo in sysvar_audioSuccess, offsets for sysvar_scrCols, sysvar_scrRows
 ; 04/03/2023:	Added sysvar_scrpixelIndex
 ; 08/03/2023:	Renamed sysvar_keycode to sysvar_keyascii, added sysvar_vkeycode
+; 15/03/2023:	Added mos_copy, mos_getrtc, mos_setrtc, rtc, vdp_pflag_rtc
 
 ; MOS high level functions
 ;
@@ -34,6 +35,9 @@ mos_fputc:		EQU	0Dh
 mos_feof:		EQU	0Eh
 mos_getError:		EQU	0Fh
 mos_oscli:		EQU	10h
+mos_copy:		EQU	11h
+mos_getrtc:		EQU	12h
+mos_setrtc:		EQU	13h
 
 ; FatFS file access functions
 ;
@@ -117,14 +121,16 @@ sysvar_scrpixelIndex:	EQU	16h	; 1: Index of pixel data read from screen
 sysvar_vkeycode:	EQU	17h	; 1: Virtual key code from FabGL
 sysvar_vkeydown		EQU	18h	; 1: Virtual key state from FabGL (0=up, 1=down)
 sysvar_vkeycount:	EQU	19h	; 1: Incremented every time a key packet is received
+sysvar_rtc:		EQU	1Ah	; 8: Real time clock data
 	
 ; Flags for the VPD protocol
 ;
-vdp_pflag_cursor:	EQU		00000001b
-vdp_pflag_scrchar:	EQU		00000010b
-vdp_pflag_point:	EQU		00000100b
-vdp_pflag_audio:	EQU		00001000b
-vdp_pflag_mode:		EQU		00010000b
+vdp_pflag_cursor:	EQU	00000001b
+vdp_pflag_scrchar:	EQU	00000010b
+vdp_pflag_point:	EQU	00000100b
+vdp_pflag_audio:	EQU	00001000b
+vdp_pflag_mode:		EQU	00010000b
+vdp_pflag_rtc:		EQU	00100000b
 	
 ;
 ; Macro for calling the API
