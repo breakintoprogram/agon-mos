@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	09/03/2023
+ * Last Updated:	15/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -21,6 +21,8 @@
  * 14/02/2023:		Added mos_cmdVDU
  * 20/02/2023:		Function mos_getkey now returns a BYTE
  * 09/03/2023:		Added mos_cmdTIME, mos_cmdCREDITS, mos_DIR now accepts a path
+ * 14/03/2023:		Added mos_cmdCOPY and mos_COPY
+ * 15/03/2023:		Added mos_GETRTC, mos_SETRTC
  */
 
 #ifndef MOS_H
@@ -61,29 +63,33 @@ int		mos_cmdJMP(char * ptr);
 int		mos_cmdRUN(char * ptr);
 int		mos_cmdCD(char * ptr);
 int		mos_cmdREN(char *ptr);
+int		mos_cmdCOPY(char *ptr);
 int		mos_cmdMKDIR(char *ptr);
 int		mos_cmdSET(char *ptr);
 int		mos_cmdVDU(char *ptr);
 int		mos_cmdTIME(char *ptr);
 int		mos_cmdCREDITS(char *ptr);
 
-UINT24	mos_LOAD(char * filename, INT24 address, INT24 size);
-UINT24	mos_SAVE(char * filename, INT24 address, INT24 size);
+UINT24	mos_LOAD(char * filename, UINT24 address, UINT24 size);
+UINT24	mos_SAVE(char * filename, UINT24 address, UINT24 size);
 UINT24	mos_CD(char * path);
 UINT24	mos_DIR(char * path);
 UINT24	mos_DEL(char * filename);
 UINT24 	mos_REN(char * filename1, char * filename2);
+UINT24	mos_COPY(char * filename1, char * filename2);
 UINT24	mos_MKDIR(char * filename);
-UINT24 	mos_BOOT(char * filename, char * buffer, INT24 size);
+UINT24 	mos_BOOT(char * filename, char * buffer, UINT24 size);
 
 UINT24	mos_FOPEN(char * filename, UINT8 mode);
 UINT24	mos_FCLOSE(UINT8 fh);
-char	mos_FGETC(UINT8 fh);
+UINT8	mos_FGETC(UINT8 fh);
 void	mos_FPUTC(UINT8 fh, char c);
 
-char	mos_FEOF(UINT8 fh);
+UINT8	mos_FEOF(UINT8 fh);
 
-void 	mos_GETERROR(UINT8 errno, INT24 address, INT24 size);
+void 	mos_GETERROR(UINT8 errno, UINT24 address, UINT24 size);
 UINT24 	mos_OSCLI(char * cmd);
+UINT8 	mos_GETRTC(UINT24 address);
+void	mos_SETRTC(UINT24 address);
 
 #endif MOS_H

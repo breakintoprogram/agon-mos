@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	12/03/2023
+ * Last Updated:	15/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -23,6 +23,8 @@
  * 14/02/2023:		Added mos_cmdVDU, support for more keyboard layouts in mos_cmdSET
  * 20/02/2023:		Function mos_getkey now returns a BYTE
  * 12/03/2023:		Renamed keycode to keyascii, keyascii now a BYTE, added mos_cmdTIME, mos_cmdCREDITS, mos_DIR now accepts a path
+ * 14/03/2023:		Added mos_cmdCOPY, mos_COPY, aliase for mos_REN, made error messages a bit more user friendly
+ * 15/03/2023:		Added mos_GETRTC
  */
 
 #include <eZ80.h>
@@ -43,6 +45,8 @@ extern int exec16(UINT24 addr, char * params);	// In misc.asm
 extern int exec24(UINT24 addr, char * params);	// In misc.asm
 
 extern volatile BYTE keyascii;					// In globals.asm
+extern volatile BYTE vpd_protocol_flags;		// In globals.asm
+extern BYTE rtc;								// In globals.asm
 
 static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
 
@@ -51,22 +55,24 @@ t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 // Array of MOS commands and pointer to the C function to run
 //
 static t_mosCommand mosCommands[] = {
-	{ ".", 			&mos_cmdDIR },
-	{ "DIR",		&mos_cmdDIR },
-	{ "CAT",		&mos_cmdDIR },
-	{ "LOAD",		&mos_cmdLOAD },
-	{ "SAVE", 		&mos_cmdSAVE },
-	{ "DELETE",		&mos_cmdDEL },
-	{ "ERASE",		&mos_cmdDEL },
-	{ "JMP",		&mos_cmdJMP },
-	{ "RUN", 		&mos_cmdRUN },
-	{ "CD", 		&mos_cmdCD },
-	{ "RENAME",		&mos_cmdREN },
-	{ "MKDIR", 		&mos_cmdMKDIR },
-	{ "SET",		&mos_cmdSET },
-	{ "VDU",		&mos_cmdVDU },
-	{ "TIME", 		&mos_cmdTIME },
-	{ "CREDITS",	&mos_cmdCREDITS },
+	{ ".", 			&mos_cmdDIR		},
+	{ "DIR",		&mos_cmdDIR		},
+	{ "CAT",		&mos_cmdDIR		},
+	{ "LOAD",		&mos_cmdLOAD	},
+	{ "SAVE", 		&mos_cmdSAVE	},
+	{ "DELETE",		&mos_cmdDEL		},
+	{ "ERASE",		&mos_cmdDEL		},
+	{ "JMP",		&mos_cmdJMP		},
+	{ "RUN", 		&mos_cmdRUN		},
+	{ "CD", 		&mos_cmdCD		},
+	{ "RENAME",		&mos_cmdREN		},
+	{ "MOVE",		&mos_cmdREN		},
+	{ "MKDIR", 		&mos_cmdMKDIR	},
+	{ "COPY", 		&mos_cmdCOPY	},
+	{ "SET",		&mos_cmdSET		},
+	{ "VDU",		&mos_cmdVDU		},
+	{ "TIME", 		&mos_cmdTIME	},
+	{ "CREDITS",	&mos_cmdCREDITS	},
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -81,8 +87,8 @@ static char * mos_errors[] = {
 	"Could not find file",
 	"Could not find path",
 	"Invalid path name",
-	"Access denied due to prohibited access or directory full",
-	"Access denied due to prohibited access",
+	"Access denied or directory full",
+	"Access denied",
 	"Invalid file/directory object",
 	"SD card is write protected",
 	"Logical drive number is invalid",
@@ -501,6 +507,27 @@ int mos_cmdREN(char *ptr) {
 	return fr;
 }
 
+// COPY <filename1> <filename2> command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdCOPY(char *ptr) {
+	FRESULT	fr;
+	char *  filename1;
+	char *	filename2;
+	
+	if(
+		!mos_parseString(NULL, &filename1) ||
+		!mos_parseString(NULL, &filename2)
+	) {
+		return 19; // Bad Parameter
+	}
+	fr = mos_COPY(filename1, filename2);
+	return fr;
+}
+
 // MKDIR <filename> command
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
@@ -569,9 +596,39 @@ int	mos_cmdVDU(char *ptr) {
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// - MOS error code
+// - 0
 //
 int mos_cmdTIME(char *ptr) {
+	int		yr, mo, da, ho, mi, se;
+	char	buffer[64];
+
+	// If there is a first parameter
+	//
+	if(mos_parseNumber(NULL, &yr)) {
+		//
+		// Fetch the rest of the parameters
+		//
+		if(
+			!mos_parseNumber(NULL, &mo) ||
+			!mos_parseNumber(NULL, &da) ||
+			!mos_parseNumber(NULL, &ho) ||
+			!mos_parseNumber(NULL, &mi) ||
+			!mos_parseNumber(NULL, &se) 
+		) {
+			return 19;
+		}
+		buffer[0] = yr - EPOCH_YEAR;
+		buffer[1] = mo;
+		buffer[2] = da;
+		buffer[3] = ho;
+		buffer[4] = mi;
+		buffer[5] = se;
+		mos_SETRTC((UINT24)buffer);
+	}
+	// Return the new time
+	//
+	mos_GETRTC((UINT24)buffer);
+	printf("%s\n\r", buffer);
 	return 0;
 }
 
@@ -596,7 +653,7 @@ int mos_cmdCREDITS(char *ptr) {
 // Returns:
 // - FatFS return code
 // 
-UINT24 mos_LOAD(char * filename, INT24 address, INT24 size) {
+UINT24 mos_LOAD(char * filename, UINT24 address, UINT24 size) {
 	FRESULT	fr;
 	FIL	   	fil;
 	UINT   	br;	
@@ -620,7 +677,7 @@ UINT24 mos_LOAD(char * filename, INT24 address, INT24 size) {
 // Returns:
 // - FatFS return code
 // 
-UINT24	mos_SAVE(char * filename, INT24 address, INT24 size) {
+UINT24	mos_SAVE(char * filename, UINT24 address, UINT24 size) {
 	FRESULT	fr;
 	FIL	   	fil;
 	UINT   	br;	
@@ -717,6 +774,46 @@ UINT24 mos_REN(char * filename1, char * filename2) {
 	return fr;
 }
 
+// Copy file
+// Parameters:
+// - filename1: Path of file to rename
+// - filename2: New filename
+// Returns:
+// - FatFS return code
+// 
+UINT24 mos_COPY(char * filename1, char * filename2) {
+	FRESULT fr;
+	FIL		fsrc, fdst;
+	BYTE	buffer[1024];
+	UINT	br, bw;
+
+	// Open the file to copy
+	//
+	fr = f_open(&fsrc, filename1, FA_READ);
+	if(fr) {
+		return fr;
+	}
+	// Open the destination file
+	//
+	fr = f_open(&fdst, filename2, FA_WRITE | FA_CREATE_NEW);
+	if(fr) {
+		return fr;
+	}
+	// Copy the file
+	//
+	while(1) {
+        fr = f_read(&fsrc, buffer, sizeof buffer, &br);	// Read a chunk of data from the source file
+        if (br == 0) break;								// Error or EOF
+        fr = f_write(&fdst, buffer, br, &bw);			// Write it to the destination file
+        if (bw < br) break; 							// Error or Disk Full
+	}
+    f_close(&fsrc);										// Close both files
+    f_close(&fdst);
+
+	return fr;
+}
+
+
 // Make a directory
 // Parameters:
 // - filename: Path of file to delete
@@ -738,7 +835,7 @@ UINT24 mos_MKDIR(char * filename) {
 // Returns:
 // - FatFS return code
 //
-UINT24 mos_BOOT(char * filename, char * buffer, INT24 size) {
+UINT24 mos_BOOT(char * filename, char * buffer, UINT24 size) {
 	FRESULT	fr;
 	FIL	   	fil;
 	UINT   	br;	
@@ -813,7 +910,7 @@ UINT24 mos_FCLOSE(UINT8 fh) {
 // Returns:
 // - Byte read
 //
-char	mos_FGETC(UINT8 fh) {
+UINT8	mos_FGETC(UINT8 fh) {
 	FRESULT fr;
 	UINT	br;
 	char	c;
@@ -844,7 +941,7 @@ void	mos_FPUTC(UINT8 fh, char c) {
 // Returns:
 // - 1 if EOF, otherwise 0
 //
-char	mos_FEOF(UINT8 fh) {
+UINT8	mos_FEOF(UINT8 fh) {
 	if(fh > 0 && fh <= MOS_maxOpenFiles) {
 		if(f_eof(&mosFileObjects[fh - 1].fileObject) != 0) {
 			return 1;
@@ -859,7 +956,7 @@ char	mos_FEOF(UINT8 fh) {
 // - address: Address of the buffer to copy the error code to
 // - size: Size of buffer
 //
-void mos_GETERROR(UINT8 errno, INT24 address, INT24 size) {
+void mos_GETERROR(UINT8 errno, UINT24 address, UINT24 size) {
 	strncpy((char *)address, mos_errors[errno], size - 1);
 }
 
@@ -875,3 +972,50 @@ UINT24 mos_OSCLI(char * cmd) {
 	return fr;
 }
 
+// Get the RTC
+// Parameters
+// - address: Pointer to buffer to store time in
+// Returns:
+// - size of string
+//
+UINT8 mos_GETRTC(UINT24 address) {
+	BYTE	month, day, dayOfWeek, hour, minute, second;
+	char	year;
+
+	BYTE *	p = &rtc;
+
+	rtc_update();
+
+	year		= *(p+0);
+	month		= *(p+1);
+	day   		= *(p+2);
+	dayOfWeek	= *(p+4);
+	hour		= *(p+5);
+	minute		= *(p+6);
+	second 		= *(p+7);
+
+	rtc_formatDateTime((char *)address, year, month, day, dayOfWeek, hour, minute, second);
+	return strlen((char *)address);
+}
+
+// Set the RTC
+// Parameters
+// - address: Pointer to buffer that contains the time data
+// Returns:
+// - size of string
+//
+void mos_SETRTC(UINT24 address) {
+	BYTE * p = (BYTE *)address;
+	
+	putch(23);				// Set the ESP32 time
+	putch(0);
+	putch(7);
+	putch(1);				// 1: Set time (6 byte buffer mode)
+	//
+	putch(*(p+0));			// Year
+	putch(*(p+1));			// Month
+	putch(*(p+2));			// Day
+	putch(*(p+3));			// Hour
+	putch(*(p+4));			// Minute
+	putch(*(p+5));			// Second
+}
