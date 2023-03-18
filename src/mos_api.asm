@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	13/03/2023
+; Last Updated:	15/03/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -13,6 +13,7 @@
 ; 13/10/2022:	Added mos_OSCLI and supporting code
 ; 20/10/2022:	Tweaked error handling
 ; 13/03/2023:	Renamed keycode to keyascii, fixed mos_api_getkey, added parameter to mos_api_dir
+; 15/03/2023:	Added mos_api_copy, mos_api_getrtc, mos_api_setrtc
 
 			.ASSUME	ADL = 1
 			
@@ -40,12 +41,16 @@
 			XREF	_mos_FEOF
 			XREF	_mos_GETERROR
 			XREF	_mos_MKDIR
+			XREF	_mos_COPY
+			XREF	_mos_GETRTC 
+			XREF	_mos_SETRTC 
 			
 			XREF	_keyascii
 			XREF	_keycount
 			XREF	_keydown
 
 			XREF	_sysvars
+			XREF	_vpd_protocol_flags
 			
 ; Call a MOS API function
 ; 00h - 7Fh: Reserved for high level MOS calls
@@ -72,6 +77,9 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_feof		; 0x0E
 			DW	mos_api_getError	; 0x0F
 			DW	mos_api_oscli		; 0x10
+			DW	mos_api_copy		; 0x11
+			DW	mos_api_getrtc		; 0x12
+			DW	mos_api_setrtc		; 0x13
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -270,6 +278,31 @@ mos_api_ren:		LD	A, MB		; Check if MBASE is 0
 $$:			PUSH	DE		; char * filename2
 			PUSH	HL		; char * filename1
 			CALL	_mos_REN	; Call the C function mos_REN
+			LD	A, L		; Return vaue in HLU, put in A
+			POP	HL
+			POP	DE
+			RET
+
+; Copy a file on the SD card
+; HLU: Address of filename1 (zero terminated)
+; DEU: Address of filename2 (zero terminated)
+; Returns:
+; - A: File error, or 0 if OK
+;
+mos_api_copy:		LD	A, MB		; Check if MBASE is 0
+			OR	A, A
+			JR	Z, $F		; If it is, we can assume HL and DE are 24 bit
+;
+; Now we need to mod HLU and DEu to include the MBASE in the U byte
+; 
+			CALL	SET_AHL24
+			CALL	SET_ADE24
+;
+; Finally we can do the rename
+; 
+$$:			PUSH	DE		; char * filename2
+			PUSH	HL		; char * filename1
+			CALL	_mos_COPY	; Call the C function mos_COPY
 			LD	A, L		; Return vaue in HLU, put in A
 			POP	HL
 			POP	DE
@@ -505,12 +538,50 @@ mos_api_oscli:		LD	A, MB		; Check if MBASE is 0
 ;
 ; Now execute the MOS command
 ;
-$$:			PUSH	HL		; char * buffer
+			PUSH	HL		; char * buffer
 			CALL	_mos_OSCLI
 			LD	A, L		; Return vaue in HLU, put in A			
 			POP	HL
-			RET			
-			
+			RET
+
+; Fetch a RTC string
+; HLU: Pointer to a buffer to copy the string to
+; Returns:
+;   A: Length of time
+;
+mos_api_getrtc:		LD	A, MB		; Check if MBASE is 0
+			OR	A, A 
+;
+; Now we need to mod HLU to include the MBASE in the U byte
+;
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
+;
+; Now fetch the time
+;		
+			PUSH	HL		; UINT24 address
+			CALL	_mos_GETRTC
+			POP	HL
+			RET 
+
+; Set the RTC
+; HLU: Pointer to a buffer with the time data in
+; Returns:
+;   A: Length of time
+;
+mos_api_setrtc:		LD	A, MB		; Check if MBASE is 0
+			OR	A, A 
+;
+; Now we need to mod HLU to include the MBASE in the U byte
+;
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
+;
+; Now fetch the time
+;		
+			PUSH	HL		; UINT24 address
+			CALL	_mos_SETRTC
+			POP	HL
+			RET 
+
 			
 ; Commands that have not been implemented yet
 ;
