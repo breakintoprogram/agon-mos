@@ -1,42 +1,42 @@
-/*-----------------------------------------------------------------------*/
-/* Low level disk I/O module SKELETON for FatFs     (C)ChaN, 2019        */
-/*-----------------------------------------------------------------------*/
-/* If a working storage control module is available, it should be        */
-/* attached to the FatFs via a glue function rather than modifying it.   */
-/* This is an example of glue functions to attach various exsisting      */
-/* storage control modules to the FatFs module with a defined API.       */
-/*-----------------------------------------------------------------------*/
+/*
+ * Title:			AGON Low level disk I/O module for FatFs 
+ * Modified By:		Dean Belfield
+ * Created:			19/06/2022
+ * Last Updated:	15/03/2023
+ *
+ * Credits:
+ * Based upon a skeleton framework (C)ChaN, 2019
+ *
+ * Modinfo:
+ * 11/07/2023:		Tweaked to compile without ZDL enabled in project settings
+ * 15/03/2023:		Added get_fattime
+ */
 
-#include "ff.h"			/* Obtains integer types */
-#include "diskio.h"		/* Declarations of disk functions */
+#include "ff.h"			// Obtains integer types
+#include "diskio.h"		// Declarations of disk functions
 
-#include "sd.h"			/* Phyiscal SD card layer for eZ80 */
+#include "sd.h"			// Physical SD card layer for eZ80
+#include "clock.h"		// Clock for timestamp
 
-/* Definitions of physical drive number for each drive */
+extern BYTE rtc;		// In globals.asm
 
-#define DEV_RAM		0	/* Example: Map Ramdisk to physical drive 0 */
-#define DEV_MMC		1	/* Example: Map MMC/SD card to physical drive 1 */
-#define DEV_USB		2	/* Example: Map USB MSD to physical drive 2 */
-
-/*-----------------------------------------------------------------------*/
-/* Get Drive Status                                                      */
-/*-----------------------------------------------------------------------*/
-
-DSTATUS disk_status (
-	BYTE pdrv		/* Physical drive number to identify the drive */
-)
-{
+// Get Drive Status (Not implemented in AGON)
+// Parameters:
+// - pdrv: Physical drive number to identify the drive
+// Returns:
+// - DSTATUS
+// 
+DSTATUS disk_status(BYTE pdrv) {
 	return 0;
 }
 
-/*-----------------------------------------------------------------------*/
-/* Initialize a Drive                                                    */
-/*-----------------------------------------------------------------------*/
-
-DSTATUS disk_initialize (
-	BYTE pdrv				/* Physical drive nmuber to identify the drive */
-)
-{
+// Initialise a drive
+// Parameters:
+// - pdrv: Physical drive number to identify the drive
+// Returns:
+// - DSTATUS
+//
+DSTATUS disk_initialize(BYTE pdrv) {
 	BYTE err = SD_init();
 	if(err == SD_SUCCESS) {
 		return RES_OK;
@@ -44,17 +44,16 @@ DSTATUS disk_initialize (
 	return RES_ERROR;
 }
 
-/*-----------------------------------------------------------------------*/
-/* Read Sector(s)                                                        */
-/*-----------------------------------------------------------------------*/
-
-DRESULT disk_read (
-	BYTE pdrv,		/* Physical drive nmuber to identify the drive */
-	BYTE *buff,		/* Data buffer to store read data */
-	LBA_t sector,	/* Start sector in LBA */
-	UINT count		/* Number of sectors to read */
-)
-{
+// Read Sector(s)
+// Parameters:
+// - pdrv: Physical drive nmuber to identify the drive
+// - buff: Data buffer to store read data
+// - sector: Start sector in LBA
+// - count: Number of sectors to read
+// Returns:
+// - DSTATUS
+//
+DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
 	BYTE err = SD_readBlocks(sector, buff, count);
 	if(err == SD_SUCCESS) {
 		return RES_OK;
@@ -62,19 +61,18 @@ DRESULT disk_read (
 	return RES_ERROR;
 }
 
-/*-----------------------------------------------------------------------*/
-/* Write Sector(s)                                                       */
-/*-----------------------------------------------------------------------*/
-
 #if FF_FS_READONLY == 0
 
-DRESULT disk_write (
-	BYTE pdrv,			/* Physical drive nmuber to identify the drive */
-	const BYTE *buff,	/* Data to be written */
-	LBA_t sector,		/* Start sector in LBA */
-	UINT count			/* Number of sectors to write */
-)
-{
+// Write Sector(s)
+// Parameters:
+// - pdrv: Physical drive nmuber to identify the drive
+// - buff: Data to be written
+// - sector: Start sector in LBA
+// - count: Number of sectors to write
+// Returns:
+// - DSTATUS
+//
+DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count){
 	BYTE err = SD_writeBlocks(sector, buff, count);
 	if(err == SD_SUCCESS) {
 		return RES_OK;
@@ -85,15 +83,41 @@ DRESULT disk_write (
 
 #endif
 
-/*-----------------------------------------------------------------------*/
-/* Miscellaneous Functions                                               */
-/*-----------------------------------------------------------------------*/
-
-DRESULT disk_ioctl (
-	BYTE pdrv,		/* Physical drive nmuber (0..) */
-	BYTE cmd,		/* Control code */
-	void *buff		/* Buffer to send/receive control data */
-)
-{
+// Disk I/O Control (Not implemented in AGON)
+// Parameters:
+// - pdrv: Physical drive nmuber (0..)
+// - cmd: Control code
+// - buff: Buffer to send/receive control data
+// Returns:
+// - DSTATUS
+//
+DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff) {
 	return RES_OK;
+}
+
+// Get RTC time for filestamps
+// Returns:
+// - TIME (bit packed)
+//
+//    0 to  4: Seconds/2 (0 to 29)
+//    5 to 10: Minutes (0 to 59)
+//   11 to 15: Hours (0 to 23)
+//   16 to 20: Day of Month (1 to 31)
+//   21 to 24: Month (1 to 12)
+//   25 to 31: Year-1980 (0 to 127)
+//
+DWORD get_fattime(void) {
+	DWORD	yr, mo, da, hr, mi, se;
+	BYTE *	p = &rtc;
+
+	rtc_update();
+
+	yr =  *(p+0)    << 25;
+	mo = (*(p+1)+1) << 21;
+	da =  *(p+2)    << 16;
+	hr =  *(p+5)    << 11;
+	mi =  *(p+6)    <<  5;
+	se =  *(p+7)    >>  1;
+
+	return se | mi | hr | da | mo | yr;
 }
