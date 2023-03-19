@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Equs
 ; Author:	Dean Belfield
 ; Created:	15/07/2022
-; Last Updated:	15/03/2023
+; Last Updated:	19/03/2023
 ;
 ; Modinfo:
 ; 24/07/2022:	Added TMR2_CTL
@@ -11,6 +11,7 @@
 ; 18/09/2022:	Added VDPP_FLAG_MODE
 ; 09/03/2023:	Renamed TMR2_CTL to TMR0_CTL
 ; 15/03/2023:	Added VDPP_FLAG_RTC
+; 19/03/2023:	Fixed TMR0_RR_H to point to correct register
 
 ; MOS specific
 ;
@@ -97,4 +98,4 @@ TMR0_CTL		EQU	80h
 TMR0_DR_L               EQU     81h
 TMR0_RR_L               EQU     81h
 TMR0_DR_H               EQU     82h
-TMR0_RR_H               EQU     83h
+TMR0_RR_H               EQU     82h
