@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	15/03/2023
+ * Last Updated:	19/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -23,8 +23,8 @@
  * 14/02/2023:		Added mos_cmdVDU, support for more keyboard layouts in mos_cmdSET
  * 20/02/2023:		Function mos_getkey now returns a BYTE
  * 12/03/2023:		Renamed keycode to keyascii, keyascii now a BYTE, added mos_cmdTIME, mos_cmdCREDITS, mos_DIR now accepts a path
- * 14/03/2023:		Added mos_cmdCOPY, mos_COPY, aliase for mos_REN, made error messages a bit more user friendly
- * 15/03/2023:		Added mos_GETRTC
+ * 15/03/2023:		Added mos_cmdCOPY, mos_COPY, mos_GETRTC, aliase for mos_REN, made error messages a bit more user friendly
+ * 19/03/2023:		Fixed compilation warnings in mos_cmdTIME
  */
 
 #include <eZ80.h>
@@ -599,7 +599,7 @@ int	mos_cmdVDU(char *ptr) {
 // - 0
 //
 int mos_cmdTIME(char *ptr) {
-	int		yr, mo, da, ho, mi, se;
+	UINT24	yr, mo, da, ho, mi, se;
 	char	buffer[64];
 
 	// If there is a first parameter
