@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	15/03/2023
+; Last Updated:	21/03/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -14,6 +14,7 @@
 ; 20/10/2022:	Tweaked error handling
 ; 13/03/2023:	Renamed keycode to keyascii, fixed mos_api_getkey, added parameter to mos_api_dir
 ; 15/03/2023:	Added mos_api_copy, mos_api_getrtc, mos_api_setrtc
+; 21/03/2023:	Added mos_api_setintvector
 
 			.ASSUME	ADL = 1
 			
@@ -44,6 +45,7 @@
 			XREF	_mos_COPY
 			XREF	_mos_GETRTC 
 			XREF	_mos_SETRTC 
+			XREF	_mos_SETINTVECTOR
 			
 			XREF	_keyascii
 			XREF	_keycount
@@ -80,6 +82,7 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_copy		; 0x11
 			DW	mos_api_getrtc		; 0x12
 			DW	mos_api_setrtc		; 0x13
+			DW	mos_api_setintvector	; 0x14
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -506,9 +509,6 @@ mos_api_feof:		PUSH	BC
 ;
 mos_api_getError:	LD	A, MB		; Check if MBASE is 0
 			OR	A, A
-;
-; Now we need to mod HLU to include the MBASE in the U byte
-;
 			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
 ; Now copy the error message
@@ -531,9 +531,6 @@ mos_api_getError:	LD	A, MB		; Check if MBASE is 0
 ;
 mos_api_oscli:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A				
-;
-; Now we need to mod HLU to include the MBASE in the U byte
-;
 			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
 ; Now execute the MOS command
@@ -551,9 +548,6 @@ mos_api_oscli:		LD	A, MB		; Check if MBASE is 0
 ;
 mos_api_getrtc:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A 
-;
-; Now we need to mod HLU to include the MBASE in the U byte
-;
 			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
 ; Now fetch the time
@@ -565,14 +559,9 @@ mos_api_getrtc:		LD	A, MB		; Check if MBASE is 0
 
 ; Set the RTC
 ; HLU: Pointer to a buffer with the time data in
-; Returns:
-;   A: Length of time
 ;
 mos_api_setrtc:		LD	A, MB		; Check if MBASE is 0
 			OR	A, A 
-;
-; Now we need to mod HLU to include the MBASE in the U byte
-;
 			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;
 ; Now fetch the time
@@ -582,7 +571,28 @@ mos_api_setrtc:		LD	A, MB		; Check if MBASE is 0
 			POP	HL
 			RET 
 
-			
+; Set an interrupt vector
+; HLU: Pointer to the interrupt vector
+;   A: Vector # to set
+; Returns:
+; HLU: Pointer to the previous vector
+;
+mos_api_setintvector:	LD	DE, 0 		; Clear DE
+			LD	E, A 		; Store the vector #
+			LD	A, MB 		; Check if MBASE is 0
+			OR 	A, A 
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
+;
+; Now set the vector 
+;
+			PUSH	HL		; void(*handler)(void)
+			PUSH	DE 		; byte vector
+			CALL	_mos_SETINTVECTOR
+			POP	DE 
+			POP	HL
+			RET 
+
+;		
 ; Commands that have not been implemented yet
 ;
 ffs_api_fopen:
