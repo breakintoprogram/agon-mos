@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Miscellaneous helper functions
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	09/03/2023
+; Last Updated:	20/03/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added SET_AHL24 and SET_ADE24
@@ -10,6 +10,7 @@
 ; 08/11/2022:	Fixed return value bug in exec16
 ; 19/11/2022:	Added exec24 and params for exec16/24 functions
 ; 09/03/2023:	Added wait_timer0
+; 20/03/2023:	Function exec24 now preserves MB
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -82,6 +83,8 @@ _exec24:		PUSH 	IY
 			PUSH 	AF		; Stack any registers being used
 			PUSH	DE
 			PUSH	IX
+			LD	A, MB 		; Preserve the MBASE register
+			PUSH	AF 
 			LD	DE, (IY+6)	; Get the address
 			LD	A, (IY+8)	; And the high byte for the code segment
 			LD	HL, (IY+9)	; Load HLU with the pointer to the params
@@ -93,14 +96,8 @@ _exec24:		PUSH 	IY
 			LD	(IX + 1), E
 			LD	(IX + 2), D
 			LD	(IX + 3), A	
-			CALL	_callSM		; Call the subroutine
-			
-			POP	IX
-			POP	DE
-			POP 	AF
-			LD	SP, IY          ; Standard epilogue
-			POP	IY
-			RET				
+;
+			JR	_execSM		; Save some bytes, jump to _exec16 to finish the call
 
 ; Execute a program in RAM
 ; int * _exec16(UINT24 address, char * params)
@@ -118,7 +115,7 @@ _exec16:		PUSH 	IY
 			PUSH 	AF		; Stack any registers being used
 			PUSH	DE
 			PUSH	IX
-			LD	A, MB
+			LD	A, MB		; Preserve the MBASE register
 			PUSH	AF
 			LD	DE, (IY+6)	; Get the address
 			LD	A, (IY+8)	; And the high byte for the code segment
@@ -134,8 +131,9 @@ _exec16:		PUSH 	IY
 			LD	(IX + 2), E
 			LD	(IX + 3), D
 			LD	(IX + 4), C9h	; RET		
-			CALL	_callSM		; Call the subroutine
-			
+;
+_execSM:		CALL	_callSM		; Call the subroutine
+;
 			POP	AF		; Restore the MBASE register
 			LD	MB, A
 			POP	IX
