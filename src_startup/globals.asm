@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Globals
 ; Author:	Dean Belfield
 ; Created:	01/08/2022
-; Last Updated:	15/03/2023
+; Last Updated:	21/03/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added sysvars structure, cursorX, cursorY
@@ -12,6 +12,7 @@
 ; 04/03/2023:	Added scrpixelIndex
 ; 09/03/2023:	Added vdp_protocol_count, keyascii, keydown; swapped keyascii with keycode, removed timer2
 ; 15/03/2023:	Added rtc
+; 21/03/2023:	Added keydelay, keyrate, keyled
 
 			INCLUDE	"../src/equs.inc"
 			
@@ -36,6 +37,9 @@
 			XDEF	_scrcolours
 			XDEF	_scrpixelIndex
 			XDEF	_rtc 
+			XDEF	_keydelay 
+			XDEF	_keyrate 
+			XDEF 	_keyled
 
 			XDEF	_errno
 			XDEF 	_coldBoot
@@ -72,6 +76,9 @@ _keycode:		DS	1		; + 17h: Virtual key code from FabGL
 _keydown:		DS	1		; + 18h; Virtual key state from FabGL (0=up, 1=down)
 _keycount:		DS	1		; + 19h: Incremented every time a key packet is received
 _rtc:			DS	8		; + 1Ah: Real time clock data
+_keydelay:		DS	2		; + 22h: Keyboard repeat delay
+_keyrate:		DS	2		; + 24h: Keyboard repeat rate
+_keyled:		DS	1		; + 26h: Keyboard LED status
 
 _errno:			DS 	3		; extern int _errno
 _coldBoot:		DS	1		; extern char _coldBoot
