@@ -2,13 +2,14 @@
  * Title:			AGON MOS - MOS line editor
  * Author:			Dean Belfield
  * Created:			18/09/2022
- * Last Updated:	14/03/2023
+ * Last Updated:	21/03/2023
  * 
  * Modinfo:
  * 28/09/2022:		Added clear parameter to mos_EDITLINE
  * 20/02/2023:		Fixed mos_EDITLINE to handle the full CP-1252 character set
  * 09/03/2023:		Added support for virtual keys; improved editing functionality
  * 14/03/2023:		Tweaks ready for command history
+ * 21/03/2023:		Improved backspace, and editing of long lines, after scroll, at bottom of screen
  */
 
 #include <eZ80.h>
@@ -41,17 +42,6 @@ void getCursorPos() {
 	while((vpd_protocol_flags & 0x01) == 0);	// Wait until the semaphore has been set
 }
 
-// Set the cursor position; eequivalent to TAB(x, y)
-// Parameters:
-// - x: Cursor X position
-// - y: Cursor Y position
-// 
-void setCursorPos(BYTE x, BYTE y) {
-	putch(31);
-	putch(x);
-	putch(y);
-}
-
 // Get the current screen dimensions from the VDU
 //
 void getModeInformation() {
@@ -74,18 +64,20 @@ void getModeInformation() {
 //
 BOOL insertCharacter(char *buffer, char c, int insertPos, int len, int limit) {
 	int	i;
+	int count = 0;
 	
 	if(len < limit) {
 		putch(c);
-		getCursorPos();
 		for(i = len; i >= insertPos; i--) {
 			buffer[i+1] = buffer[i];
 		}
 		buffer[insertPos] = c;
-		for(i = insertPos + 1; i <= len; i++) {
+		for(i = insertPos + 1; i <= len; i++, count++) {
 			putch(buffer[i]);
 		}
-		setCursorPos(cursorX, cursorY);
+		for(i = 0; i < count; i++) {
+			doLeftCursor();
+		}
 		return 1;
 	}	
 	return 0;
@@ -94,26 +86,25 @@ BOOL insertCharacter(char *buffer, char c, int insertPos, int len, int limit) {
 // Remove a character from the input string
 // Parameters:
 // - buffer: Pointer to the line edit buffer
-// - c: The backspace character to print (typically 0x7F)
 // - insertPos: Position in the input string of the character to be deleted
 // - len: Length of the input string before the character is deleted
 // Returns:
 // - true if the character was deleted, otherwise false
 //
-BOOL deleteCharacter(char *buffer, char c, int insertPos, int len) {
+BOOL deleteCharacter(char *buffer, int insertPos, int len) {
 	int	i;
+	int count = 0;
 	if(insertPos > 0) {
-		if(cursorX > 0) {
-			getCursorPos();
-			putch(c);
-			for(i = insertPos - 1; i < len; i++) {
-				BYTE b = buffer[i+1];
-				buffer[i] = b;
-				putch(b ? b : ' ');
-			}
-			setCursorPos(cursorX - 1, cursorY);
-			return 1;
+		doLeftCursor();
+		for(i = insertPos - 1; i < len; i++, count++) {
+			BYTE b = buffer[i+1];
+			buffer[i] = b;
+			putch(b ? b : ' ');
 		}
+		for(i = 0; i < count; i++) {
+			doLeftCursor();
+		}
+		return 1;
 	}	
 	return 0;
 }
@@ -252,7 +243,7 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 								}
 							} break;
 							case 0x7F: {	// Backspace
-								if(deleteCharacter(buffer, keya, insertPos, len)) {
+								if(deleteCharacter(buffer, insertPos, len)) {
 									insertPos--;
 								}
 							} break;
