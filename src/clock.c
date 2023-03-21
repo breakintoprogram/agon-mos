@@ -2,10 +2,11 @@
  * Title:			AGON MOS - Real Time Clock
  * Author:			Dean Belfield
  * Created:			09/03/2023
- * Last Updated:	15/03/2023
+ * Last Updated:	21/03/2023
  * 
  * Modinfo:
  * 15/03/2023:		Added rtc_getDateString, rtc_update
+ * 21/03/2023:		Uses VDP values from defines.h
  */
 
 #include <ez80.h>
@@ -15,6 +16,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "defines.h"
 #include "uart.h"
 #include "clock.h"
 
@@ -52,7 +54,7 @@ void rtc_update() {
 
 	putch(23);					// Request the time from the ESP32
 	putch(0);
-	putch(7);
+	putch(VDP_rtc);
 	putch(0);					// 0: Get time
 
 	while((vpd_protocol_flags & 0x20) == 0);	

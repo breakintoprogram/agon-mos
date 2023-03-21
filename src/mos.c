@@ -25,7 +25,7 @@
  * 12/03/2023:		Renamed keycode to keyascii, keyascii now a BYTE, added mos_cmdTIME, mos_cmdCREDITS, mos_DIR now accepts a path
  * 15/03/2023:		Added mos_cmdCOPY, mos_COPY, mos_GETRTC, aliase for mos_REN, made error messages a bit more user friendly
  * 19/03/2023:		Fixed compilation warnings in mos_cmdTIME
- * 21/03/2023:		Added mos_SETINTVECTOR
+ * 21/03/2023:		Added mos_SETINTVECTOR, uses VDP values from defines.h
  */
 
 #include <eZ80.h>
@@ -35,6 +35,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "defines.h"
 #include "mos.h"
 #include "config.h"
 #include "mos_editor.h"
@@ -1012,7 +1013,7 @@ void mos_SETRTC(UINT24 address) {
 	
 	putch(23);				// Set the ESP32 time
 	putch(0);
-	putch(7);
+	putch(VDP_rtc);
 	putch(1);				// 1: Set time (6 byte buffer mode)
 	//
 	putch(*(p+0));			// Year
