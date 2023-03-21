@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	15/03/2023
+; Last Updated:	21/03/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -15,6 +15,7 @@
 ; 04/03/2023:	Added sysvar_scrpixelIndex
 ; 08/03/2023:	Renamed sysvar_keycode to sysvar_keyascii, added sysvar_vkeycode
 ; 15/03/2023:	Added mos_copy, mos_getrtc, mos_setrtc, rtc, vdp_pflag_rtc
+; 21/03/2023:	Added mos_setintvector, sysvars for keyboard status
 
 ; MOS high level functions
 ;
@@ -38,6 +39,7 @@ mos_oscli:		EQU	10h
 mos_copy:		EQU	11h
 mos_getrtc:		EQU	12h
 mos_setrtc:		EQU	13h
+mos_setintvector:	EQU	14h
 
 ; FatFS file access functions
 ;
@@ -122,6 +124,9 @@ sysvar_vkeycode:	EQU	17h	; 1: Virtual key code from FabGL
 sysvar_vkeydown		EQU	18h	; 1: Virtual key state from FabGL (0=up, 1=down)
 sysvar_vkeycount:	EQU	19h	; 1: Incremented every time a key packet is received
 sysvar_rtc:		EQU	1Ah	; 8: Real time clock data
+sysvar_keydelay:	EQU	22h	; 2: Keyboard repeat delay
+sysvar_keyrate:		EQU	24h	; 2: Keyboard repeat reat
+sysvar_keyled:		EQU	26h	; 1: Keyboard LED status
 	
 ; Flags for the VPD protocol
 ;
