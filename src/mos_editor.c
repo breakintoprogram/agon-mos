@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "defines.h"
 #include "mos_editor.h"
 #include "mos.h"
 #include "uart.h"
@@ -38,7 +39,7 @@ void getCursorPos() {
 	vpd_protocol_flags &= 0xFE;					// Clear the semaphore flag
 	putch(23);									// Request the cursor position
 	putch(0);
-	putch(2);
+	putch(VDP_cursor);
 	while((vpd_protocol_flags & 0x01) == 0);	// Wait until the semaphore has been set
 }
 
@@ -48,8 +49,40 @@ void getModeInformation() {
 	vpd_protocol_flags &= 0xEF;					// Clear the semaphore flag
 	putch(23);
 	putch(0);
-	putch(6);
+	putch(VDP_mode);
 	while((vpd_protocol_flags & 0x10) == 0);	// Wait until the semaphore has been set
+}
+
+// Move cursor left
+//
+void doLeftCursor() {
+	getCursorPos();
+	if(cursorX > 0) {
+		putch(0x08);
+	}
+	else {
+		while(cursorX < (scrcols - 1)) {
+			putch(0x09);
+			cursorX++;
+		}
+		putch(0x0B);
+	}
+}
+
+// Move Cursor Right
+// 
+void doRightCursor() {
+	getCursorPos();
+	if(cursorX < (scrcols - 1)) {
+		putch(0x09);
+	}
+	else {
+		while(cursorX > 0) {
+			putch(0x08);
+			cursorX--;
+		}
+		putch(0x0A);
+	}
 }
 
 // Insert a character in the input string
@@ -117,38 +150,6 @@ void waitKey() {
 		c = keycount;				
 		while(c == keycount);		// Wait for a key event
 	} while (keydown == 0);			// Loop until we get a key down value (keydown = 1)
-}
-
-// Move cursor left
-//
-void doLeftCursor() {
-	getCursorPos();
-	if(cursorX > 0) {
-		putch(0x08);
-	}
-	else {
-		while(cursorX < (scrcols - 1)) {
-			putch(0x09);
-			cursorX++;
-		}
-		putch(0x0B);
-	}
-}
-
-// Move Cursor Right
-// 
-void doRightCursor() {
-	getCursorPos();
-	if(cursorX < (scrcols - 1)) {
-		putch(0x09);
-	}
-	else {
-		while(cursorX > 0) {
-			putch(0x08);
-			cursorX--;
-		}
-		putch(0x0A);
-	}
 }
 
 // The main line edit function
