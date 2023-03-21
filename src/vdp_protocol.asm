@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	15/03/2023
+; Last Updated:	21/03/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
@@ -13,6 +13,7 @@
 ; 04/03/2023:	Added _scrpixelIndex to vpd_protocol_POINT
 ; 09/03/2023:	Added FabGL virtual key data to vdp_protocol_KEY, reset is now CTRL+ALT+DEL
 ; 15/03/2023:	Added vdp_protocol_RTC
+; 21/03/2023:	Added vdp_protocol_KEYSTATE
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -42,6 +43,9 @@
 			XREF	_scrcolours
 			XREF	_scrpixelIndex
 			XREF	_rtc
+			XREF	_keydelay 
+			XREF	_keyrate 
+			XREF 	_keyled
 			XREF	_vpd_protocol_flags
 			XREF	_vdp_protocol_state
 			XREF	_vdp_protocol_cmd
@@ -130,6 +134,7 @@ vdp_protocol_vector:	JP	vdp_protocol_GP
 			JP	vdp_protocol_AUDIO
 			JP	vdp_protocol_MODE
 			JP	vdp_protocol_RTC
+			JP	vdp_protocol_KEYSTATE 
 ;
 vdp_protocol_vesize:	EQU	($-vdp_protocol_vector)/4
 	
@@ -291,3 +296,16 @@ vdp_protocol_RTC:	LD		HL, _vdp_protocol_data
 			OR		VDPP_FLAG_RTC
 			LD		(_vpd_protocol_flags), A			
 			RET
+
+; Keyboard status
+; Received after VDU 23,0,8,delay;rate;led
+;
+; Word:	delay
+; Word: rate
+; Byte: led status
+;
+vdp_protocol_KEYSTATE:	LD		HL, _vdp_protocol_data
+			LD		DE, _keydelay
+			LD		BC, 5
+			LDIR 
+			RET 
