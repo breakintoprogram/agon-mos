@@ -15,7 +15,21 @@
 ; 04/03/2023:	Added sysvar_scrpixelIndex
 ; 08/03/2023:	Renamed sysvar_keycode to sysvar_keyascii, added sysvar_vkeycode
 ; 15/03/2023:	Added mos_copy, mos_getrtc, mos_setrtc, rtc, vdp_pflag_rtc
-; 21/03/2023:	Added mos_setintvector, sysvars for keyboard status
+; 21/03/2023:	Added mos_setintvector, sysvars for keyboard status, vdu codes for vdp
+
+; VDP control (VDU 23, 0, n)
+;
+vdp_gp:			EQU 	00h
+vdp_keycode:		EQU 	01h
+vdp_cursor:		EQU	02h
+vdp_scrchar:		EQU	03h
+vdp_scrpixel:		EQU	04h
+vdp_audio:		EQU	05h
+vdp_mode:		EQU	06h
+vdp_rtc:		EQU	07h
+vdp_keystate:		EQU	08h
+vdp_logicalcoords:	EQU	C0h
+vdp_terminalmode:	EQU	FFh
 
 ; MOS high level functions
 ;
