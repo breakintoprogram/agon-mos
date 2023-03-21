@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	19/03/2023
+ * Last Updated:	21/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -25,6 +25,7 @@
  * 12/03/2023:		Renamed keycode to keyascii, keyascii now a BYTE, added mos_cmdTIME, mos_cmdCREDITS, mos_DIR now accepts a path
  * 15/03/2023:		Added mos_cmdCOPY, mos_COPY, mos_GETRTC, aliase for mos_REN, made error messages a bit more user friendly
  * 19/03/2023:		Fixed compilation warnings in mos_cmdTIME
+ * 21/03/2023:		Added mos_SETINTVECTOR
  */
 
 #include <eZ80.h>
@@ -41,12 +42,14 @@
 #include "clock.h"
 #include "ff.h"
 
-extern int exec16(UINT24 addr, char * params);	// In misc.asm
-extern int exec24(UINT24 addr, char * params);	// In misc.asm
+extern void *	set_vector(unsigned int vector, void(*handler)(void));	// In vectors16.asm
 
-extern volatile BYTE keyascii;					// In globals.asm
-extern volatile BYTE vpd_protocol_flags;		// In globals.asm
-extern BYTE rtc;								// In globals.asm
+extern int 		exec16(UINT24 addr, char * params);	// In misc.asm
+extern int 		exec24(UINT24 addr, char * params);	// In misc.asm
+
+extern volatile	BYTE keyascii;					// In globals.asm
+extern volatile	BYTE vpd_protocol_flags;		// In globals.asm
+extern BYTE 	rtc;							// In globals.asm
 
 static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
 
@@ -951,7 +954,7 @@ UINT8	mos_FEOF(UINT8 fh) {
 }
 
 // Copy an error string to RAM
-// Parameters
+// Parameters:
 // - errno: The error number
 // - address: Address of the buffer to copy the error code to
 // - size: Size of buffer
@@ -973,7 +976,7 @@ UINT24 mos_OSCLI(char * cmd) {
 }
 
 // Get the RTC
-// Parameters
+// Parameters:
 // - address: Pointer to buffer to store time in
 // Returns:
 // - size of string
@@ -999,7 +1002,7 @@ UINT8 mos_GETRTC(UINT24 address) {
 }
 
 // Set the RTC
-// Parameters
+// Parameters:
 // - address: Pointer to buffer that contains the time data
 // Returns:
 // - size of string
@@ -1018,4 +1021,17 @@ void mos_SETRTC(UINT24 address) {
 	putch(*(p+3));			// Hour
 	putch(*(p+4));			// Minute
 	putch(*(p+5));			// Second
+}
+
+// Set an interrupt vector
+// Parameters:
+// - vector: The interrupt vector to set
+// - address: Address of the interrupt handler
+// Returns:
+// - address: Address of the previous interrupt handler
+//
+UINT24 mos_SETINTVECTOR(UINT8 vector, UINT24 address) {
+	void (* handler)(void) = (void *)address;
+
+	return (UINT24)set_vector(vector, handler);
 }
