@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	14/13/2023
+ * Last Updated:	22/03/2023
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -19,6 +19,7 @@
  * 13/11/2022:		Version 1.02
  * 14/03/2023		Version 1.03: SD now uses timer0, does not require interrupt
  *								+ Stubbed command history
+ * 22/03/2023:					+ Moved command history to mos_editor.c
  */
 
 #include <eZ80.h>
@@ -37,7 +38,7 @@
 
 #define		MOS_version		1
 #define		MOS_revision 	3
-#define		MOS_rc			1
+#define		MOS_rc			2
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -49,7 +50,6 @@ extern volatile	char keycode;		// Keycode
 
 static FATFS 	fs;					// Handle for the file system
 static char  	cmd[256];			// Array for the command line handler
-static char		history[4][256];	// Array for the command history
 
 // Wait for the ESP32 to respond with an ESC character to signify it is ready
 // Parameters: None
