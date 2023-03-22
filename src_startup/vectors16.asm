@@ -3,7 +3,7 @@
 ; Author:	Copyright (C) 2005 by ZiLOG, Inc.  All Rights Reserved.
 ; Modified By:	Dean Belfield
 ; Created:	10/07/2022
-; Last Updated:	17/03/2023
+; Last Updated:	22/03/2023
 ;
 ; Modinfo:
 ; 11/07/2022:	Added RST_10 code - TX
@@ -13,6 +13,7 @@
 ; 03/08/2022:	Added RST handlers, moved interrupt handlers to interrupts.asm
 ; 08/08/2022:	RST_10 now calls check_CTS before sending
 ; 17/03/2023:	Added RST_18 code
+; 22/03/2023:	Moved putch to serial.asm, renamed serial_PUTCH
 
 			INCLUDE	"../src/macros.inc"
 			INCLUDE	"../src/equs.inc"
@@ -33,8 +34,7 @@
 			XDEF	__vector_table
 			
 			XREF	mos_api
-			XREF	serial_TX
-			XREF	check_CTS
+			XREF	serial_PUTCH 
 			XREF	SET_AHL24
 
 NVECTORS 		EQU 48			; Number of interrupt vectors
@@ -115,7 +115,7 @@ _rst_08_handler:	CALL	mos_api
 ; Parameters:
 ; - A: The character
 ;
-_rst_10_handler:	CALL	_putch
+_rst_10_handler:	CALL	serial_PUTCH
 			RET.L
 
 ; Write a block of bytes out to the ESP32
@@ -135,7 +135,7 @@ _rst_18_handler:	LD	E, A 			; Preserve the delimiter
 ; Standard loop mode
 ;
 _rst_18_handler_0:	LD 	A, (HL)			; Fetch the character
-			CALL	_putch			; Output
+			CALL	serial_PUTCH		; Output
 			INC 	HL 			; Increment the buffer pointer
 			DEC	BC 			; Decrement the loop counter
 			LD	A, B 			; Is it 0?
@@ -148,21 +148,9 @@ _rst_18_handler_0:	LD 	A, (HL)			; Fetch the character
 _rst_18_handler_1:	LD 	A, (HL)			; Fetch the character
 			CP 	E 			; Is it the delimiter?
 			RET.L	Z 			; Yes, so return
-			CALL	_putch			; Output
+			CALL	serial_PUTCH		; Output
 			INC 	HL 			; Increment the buffer pointer
 			JR 	_rst_18_handler_1	; Loop
-
-; Write character out to UART
-; Parameters:
-; - A: Character to write out
-;
-_putch:			PUSH	AF
-$$:			CALL	check_CTS
-			JR	NZ, $B
-			POP	AF
-			CALL	serial_TX
-			JR	NC, _putch
-			RET
 
 ; Default Non-Maskable Interrupt handler
 ;
