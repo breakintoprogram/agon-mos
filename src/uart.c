@@ -2,11 +2,12 @@
  * Title:			AGON MOS - UART code
  * Author:			Dean Belfield
  * Created:			06/07/2022
- * Last Updated:	08/08/2022
+ * Last Updated:	22/03/2023
  * 
  * Modinfo:
  * 03/08/2022:		Enabled UART0 receive interrupt
  * 08/08/2022:		Enabled UART0 CTS port
+ * 22/03/2023:		Moved putch and getch to serial.asm
  *
  * NB:
  * The UART is on Port D
@@ -68,59 +69,4 @@ UCHAR open_UART0(UART *pUART) {
 	SETREG_LCR0(pUART->dataBits, pUART->stopBits, pUART->parity);	//! Set the line status register.
 	
 	return UART_ERR_NONE ;
-}
-
-UCHAR write_UART0(CHAR *pData, int nBytes) {
-	int		i;
-	for(i = 0; i < nBytes; i++) {
-		while ((UART0_LSR & UART_LSR_TEMT) == 0);					//! Wait till the current character is transmitted.
-		UART0_THR = pData[i];
-	}
-	return UART_ERR_NONE;
-}
-
-UCHAR read_UART0(CHAR *pData, int *nbytes) {
-	UCHAR lsr ;
-	UCHAR status = UART_ERR_NONE ;
-	int   index = 0 ;
-
-	while( UART_ERR_NONE == status ) {
-		lsr = UART0_LSR ;											//! Read the line status.
-		
-		if( 0 != (lsr & UART_LSR_BREAKINDICATIONERR) ) {			//! Check if there is any Break Indication Error.
-			status = UART_ERR_BREAKINDICATIONERR ;					//! Failure code.
-		}
-		if( 0 != (lsr & UART_LSR_FRAMINGERR) ) {					//! Check if there is any Framing error.
-			status = UART_ERR_FRAMINGERR ;							//! Failure code.
-		}
-		if( 0 != (lsr & UART_LSR_PARITYERR) ) {						//! Check if there is any Parity error.
-			status = UART_ERR_PARITYERR ;							//! Failure code.
-		}
-		if( 0 != (lsr & UART_LSR_OVERRRUNERR) )	{					//! Check if there is any Overrun error.
-			status = UART_ERR_OVERRUNERR ;							//! Failure code.
-		}
-		if( 0 != (lsr & UART_LSR_DATA_READY) ) {					//! See if there is any data byte to be read.
-			pData[ index++ ] = UART0_RBR ;							//! Read it from the receive buffer register.
-		}
-		if( index == (*nbytes) ) {									//! On completion break the while loop.
-			break ;
-		}
-	}
-	*nbytes = index ;
-	return status ;
-	
-}
-
-INT putch(INT ich) {
-	CHAR ch = ich;
-	return write_UART0(&ch, 1) ;									//! Transmit this byte on UART0.;
-} 
-
-INT getch(VOID) {
-	CHAR ch;
-	int nbytes = 1;
-	UCHAR status = read_UART0(&ch, &nbytes);
-	nbytes = (UINT)ch;
-	nbytes = (nbytes & 0x0000FF);
-	return (UART_ERR_NONE!=status) ? EOF : nbytes;
 }

@@ -2,9 +2,10 @@
  * Title:			AGON MOS - UART code
  * Author:			Dean Belfield
  * Created:			06/07/2022
- * Last Updated:	06/07/2022
+ * Last Updated:	22/03/2023
  * 
  * Modinfo:
+ * 22/03/2023:		Moved putch and getch to serial.asm
  */
 
 #ifndef UART_H
@@ -149,18 +150,16 @@
 // UART settings for open_UART0
 //
 typedef struct {
-   INT24 baudRate ;				//!< The baudrate to be used.
-   BYTE dataBits ;				//!< The number of databits per character to be used.
-   BYTE stopBits ;				//!< The number of stopbits to be used.
-   BYTE parity ;				//!< The parity bit option to be used.
-} UART ;
+   INT24	baudRate;					// The baudrate 
+   BYTE		dataBits;					// The number of databits per character to be used
+   BYTE		stopBits;					// The number of stopbits to be used
+   BYTE		parity;						// The parity bit option to be used
+} UART;
 
 VOID init_UART0();
 UCHAR open_UART0(UART *pUART);
-UCHAR write_UART0(CHAR *pData, int nBytes);
-UCHAR read_UART0(CHAR *pData, int *nbytes);
 
-INT putch(INT ich);
-INT getch(VOID);
+extern INT putch(INT ich);				// Now in serial.asm
+extern INT getch(VOID);					// Now in serial.asm
 
 #endif UART_H
