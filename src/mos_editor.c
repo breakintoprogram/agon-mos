@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS line editor
  * Author:			Dean Belfield
  * Created:			18/09/2022
- * Last Updated:	21/03/2023
+ * Last Updated:	22/03/2023
  * 
  * Modinfo:
  * 28/09/2022:		Added clear parameter to mos_EDITLINE
@@ -10,6 +10,7 @@
  * 09/03/2023:		Added support for virtual keys; improved editing functionality
  * 14/03/2023:		Tweaks ready for command history
  * 21/03/2023:		Improved backspace, and editing of long lines, after scroll, at bottom of screen
+ * 22/03/2023:		Added a single-entry command line history
  */
 
 #include <eZ80.h>
@@ -32,6 +33,10 @@ extern volatile BYTE keycount;					// In globals.asm
 extern BYTE cursorX;
 extern BYTE cursorY;
 extern BYTE scrcols;
+
+// Storage for the command history
+//
+static char	cmd_history[cmd_historyWidth + 1];
 
 // Get the current cursor position from the VPD
 //
@@ -216,6 +221,9 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 					else {				
 						switch(keya) {
 							case 0x0D:		// Enter
+								if(len > 0) {										// If there is data in the buffer
+									strncpy(cmd_history, buffer, cmd_historyWidth);	// Save in the history and fall through to next case
+								}
 							case 0x1B:	{	// Escape
 								keyr = keya;
 							} break;
@@ -238,9 +246,16 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 								}
 							} break;
 							case 0x0B:	{	// Cursor Up
-								if(insertPos >= scrcols) {
-									putch(0x0B);
-									insertPos -= scrcols;
+								if(len == 0) {										// If the buffer is empty
+									strncpy(buffer, cmd_history, limit);			// Copy from the history to the buffer
+									printf("%s", buffer);							// Output the buffer
+									insertPos = strlen(buffer);						// Set cursor to end of string
+								}
+								else {
+									if(insertPos >= scrcols) {
+										putch(0x0B);
+										insertPos -= scrcols;
+									}
 								}
 							} break;
 							case 0x7F: {	// Backspace
@@ -261,6 +276,6 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 		len-=scrcols;
 	}
 	while(len-- > 0) putch(0x09);	// Then cursor right for the remainder
-	
+
 	return keyr;					// Finally return the keycode
 }
