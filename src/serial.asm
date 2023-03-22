@@ -2,11 +2,12 @@
 ; Title:	AGON MOS - UART code
 ; Author:	Dean Belfield
 ; Created:	11/07/2022
-; Last Updated:	08/08/2022
+; Last Updated:	22/03/2023
 ;
 ; Modinfo:
 ; 27/07/2022:	Reverted serial_TX back to use RET, not RET.L and increased timeout
 ; 08/08/2022:	Added check_CTS
+; 22/03/2023:	Added serial_PUTCH, moved putch and getch from uart.c
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -19,7 +20,15 @@
 			XDEF	serial_TX
 			XDEF	serial_RX
 			XDEF	serial_RX_WAIT
-			XDEF	check_CTS
+			XDEF	serial_PUTCH 
+
+			XDEF	check_CTS	
+
+			XDEF	_putch
+			XDEF	_getch 
+			
+			XDEF	putch 		
+			XDEF	getch 
 				
 PORT			EQU	%C0		; UART0
 				
@@ -94,4 +103,60 @@ serial_RX:		IN0		A,(REG_LSR)	; Get the line status register
 			IN0		A,(REG_RBR)	; Read the character from the UART receive buffer
 			SCF 				; Set the carry flag
 			RET
-				
+
+; Write a character to the UART (blocking, waits until CTS)
+; Parameters:
+; - A: Character to write out
+;
+serial_PUTCH:		PUSH	AF
+$$:			CALL	check_CTS
+			JR	NZ, $B
+			POP	AF
+			CALL	serial_TX
+			JR	NC, serial_PUTCH
+			RET
+
+;
+; The C wrappers
+;
+
+; INT putch(INT ch);
+;
+; Write a character out to the UART
+; Parameters:
+; - ch: The character to write (least significant byte)
+; Returns:
+; - The character written
+;
+_putch:
+putch:			PUSH	IY			; Standard C prologue
+			LD	IY, 0
+			ADD	IY, SP	
+
+			LD	A, (IY+6)		; INT ch (least significant byte)
+			LD	HL, 0			; HLU: The return value
+			LD	L, A 
+			CALL	serial_PUTCH		; Output the character
+
+			LD 	SP, IY			; Standard epilogue
+			POP	IY
+			RET
+
+; INT getch(VOID);
+;
+; Read a character out to the UART - waits for character input
+; Returns:
+; - The character read
+;
+_getch:
+getch:			PUSH	IY			; Standard C prologue
+			LD	IY, 0
+			ADD	IY, SP	
+
+			CALL	serial_RX_WAIT		; Read the character
+			LD	HL, 0			; HLU: The return value
+			LD	L, A
+
+			LD 	SP, IY			; Standard epilogue
+			POP	IY
+			RET
