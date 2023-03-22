@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	21/03/2023
+; Last Updated:	22/03/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -16,18 +16,19 @@
 ; 08/03/2023:	Renamed sysvar_keycode to sysvar_keyascii, added sysvar_vkeycode
 ; 15/03/2023:	Added mos_copy, mos_getrtc, mos_setrtc, rtc, vdp_pflag_rtc
 ; 21/03/2023:	Added mos_setintvector, sysvars for keyboard status, vdu codes for vdp
+; 22/03/2023:	The VDP commands are now indexed from 0x80
 
 ; VDP control (VDU 23, 0, n)
 ;
-vdp_gp:			EQU 	00h
-vdp_keycode:		EQU 	01h
-vdp_cursor:		EQU	02h
-vdp_scrchar:		EQU	03h
-vdp_scrpixel:		EQU	04h
-vdp_audio:		EQU	05h
-vdp_mode:		EQU	06h
-vdp_rtc:		EQU	07h
-vdp_keystate:		EQU	08h
+vdp_gp:			EQU 	80h
+vdp_keycode:		EQU 	81h
+vdp_cursor:		EQU	82h
+vdp_scrchar:		EQU	83h
+vdp_scrpixel:		EQU	84h
+vdp_audio:		EQU	85h
+vdp_mode:		EQU	86h
+vdp_rtc:		EQU	87h
+vdp_keystate:		EQU	88h
 vdp_logicalcoords:	EQU	C0h
 vdp_terminalmode:	EQU	FFh
 
