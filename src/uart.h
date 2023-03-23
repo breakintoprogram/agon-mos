@@ -2,10 +2,11 @@
  * Title:			AGON MOS - UART code
  * Author:			Dean Belfield
  * Created:			06/07/2022
- * Last Updated:	22/03/2023
+ * Last Updated:	23/03/2023
  * 
  * Modinfo:
  * 22/03/2023:		Moved putch and getch to serial.asm
+ * 23/03/2023:		Fixed maths overflow in init_UART0 to work with bigger baud rates
  */
 
 #ifndef UART_H
@@ -150,7 +151,7 @@
 // UART settings for open_UART0
 //
 typedef struct {
-   INT24	baudRate;					// The baudrate 
+   UINT24	baudRate;					// The baudrate 
    BYTE		dataBits;					// The number of databits per character to be used
    BYTE		stopBits;					// The number of stopbits to be used
    BYTE		parity;						// The parity bit option to be used
