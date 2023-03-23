@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	22/03/2023
+ * Last Updated:	23/03/2023
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -20,6 +20,7 @@
  * 14/03/2023		Version 1.03: SD now uses timer0, does not require interrupt
  *								+ Stubbed command history
  * 22/03/2023:					+ Moved command history to mos_editor.c
+ * 23/03/2023:					+ Increased baud rate to 1152000
  */
 
 #include <eZ80.h>
@@ -74,7 +75,7 @@ void init_interrupts(void) {
 int main(void) {
 	UART 	pUART;
 
-	pUART.baudRate = 384000; 
+	pUART.baudRate = 1152000; 						// Max baud rate; previous stable value was 384000 
 	pUART.dataBits = 8;
 	pUART.stopBits = 1;
 	pUART.parity = PAR_NOPARITY;
