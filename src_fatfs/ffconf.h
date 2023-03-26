@@ -1,3 +1,16 @@
+/*
+ * Title:			FatFs Functional Configuration
+ * Author:			ChaN
+ * Created:			19/06/2022
+ * Last Updated:	09/03/2023
+ * 
+ * Modinfo:
+ * 11/07/2022:		Enabled FF_USE_LABEL
+ * 05/08/2022:		FF_USE_STRFUNC set to 2, FF_FS_RPATH set to 2
+ * 15/02/2023:		FF_USE_STRFUNC set to 1
+ * 09/03/2023:		FF_FS_NORTC set to 0
+ */
+ 
 /*---------------------------------------------------------------------------/
 /  FatFs Functional Configurations
 /---------------------------------------------------------------------------*/
@@ -237,7 +250,7 @@
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
 
 
-#define FF_FS_NORTC		1
+#define FF_FS_NORTC		0
 #define FF_NORTC_MON	1
 #define FF_NORTC_MDAY	1
 #define FF_NORTC_YEAR	2020
