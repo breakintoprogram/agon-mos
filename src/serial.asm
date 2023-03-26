@@ -2,12 +2,13 @@
 ; Title:	AGON MOS - UART code
 ; Author:	Dean Belfield
 ; Created:	11/07/2022
-; Last Updated:	22/03/2023
+; Last Updated:	23/03/2023
 ;
 ; Modinfo:
 ; 27/07/2022:	Reverted serial_TX back to use RET, not RET.L and increased timeout
 ; 08/08/2022:	Added check_CTS
 ; 22/03/2023:	Added serial_PUTCH, moved putch and getch from uart.c
+; 23/03/2023:	Renamed serial_RX_WAIT to seral_GETCH
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -19,7 +20,7 @@
 			
 			XDEF	serial_TX
 			XDEF	serial_RX
-			XDEF	serial_RX_WAIT
+			XDEF	serial_GETCH
 			XDEF	serial_PUTCH 
 
 			XDEF	check_CTS	
@@ -84,13 +85,6 @@ serial_TX2:		POP		AF		; Good to send at this point, so
 			SCF				; Set the carry flag
 			RET 
 
-; As RX, but wil wait until a character is received
-; A: Data read
-;
-serial_RX_WAIT:		CALL 		serial_RX
-			JR		NC,serial_RX_WAIT 
-			RET 
-
 ; Read a character from the UART
 ; A: Data read
 ; Returns:
@@ -103,6 +97,13 @@ serial_RX:		IN0		A,(REG_LSR)	; Get the line status register
 			IN0		A,(REG_RBR)	; Read the character from the UART receive buffer
 			SCF 				; Set the carry flag
 			RET
+
+; Read a character from the UART (blocking)
+; A: Data read
+;
+serial_GETCH:		CALL 		serial_RX
+			JR		NC,serial_GETCH
+			RET 
 
 ; Write a character to the UART (blocking, waits until CTS)
 ; Parameters:
@@ -153,7 +154,7 @@ getch:			PUSH	IY			; Standard C prologue
 			LD	IY, 0
 			ADD	IY, SP	
 
-			CALL	serial_RX_WAIT		; Read the character
+			CALL	serial_GETCH		; Read the character
 			LD	HL, 0			; HLU: The return value
 			LD	L, A
 
