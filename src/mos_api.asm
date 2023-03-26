@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	21/03/2023
+; Last Updated:	24/03/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -15,6 +15,7 @@
 ; 13/03/2023:	Renamed keycode to keyascii, fixed mos_api_getkey, added parameter to mos_api_dir
 ; 15/03/2023:	Added mos_api_copy, mos_api_getrtc, mos_api_setrtc
 ; 21/03/2023:	Added mos_api_setintvector
+; 24/03/2023:	Fixed bugs in mos_api_setintvector
 
 			.ASSUME	ADL = 1
 			
@@ -573,11 +574,12 @@ mos_api_setrtc:		LD	A, MB		; Check if MBASE is 0
 
 ; Set an interrupt vector
 ; HLU: Pointer to the interrupt vector
-;   A: Vector # to set
+;   E: Vector # to set
 ; Returns:
 ; HLU: Pointer to the previous vector
 ;
-mos_api_setintvector:	LD	DE, 0 		; Clear DE
+mos_api_setintvector:	LD	A, E 
+			LD	DE, 0 		; Clear DE
 			LD	E, A 		; Store the vector #
 			LD	A, MB 		; Check if MBASE is 0
 			OR 	A, A 
@@ -589,7 +591,7 @@ mos_api_setintvector:	LD	DE, 0 		; Clear DE
 			PUSH	DE 		; byte vector
 			CALL	_mos_SETINTVECTOR
 			POP	DE 
-			POP	HL
+			POP	DE
 			RET 
 
 ;		
