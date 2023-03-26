@@ -2,14 +2,17 @@
  * Title:			AGON MOS - MOS defines
  * Author:			Dean Belfield
  * Created:			21/03/2023
- * Last Updated:	22/03/2023
+ * Last Updated:	24/03/2023
  * 
  * Modinfo:
  * 22/03/2023:		The VDP commands are now indexed from 0x80
+ * 24/03/2023:		Added DEBUG
  */
 
 #ifndef MOS_DEFINES_H
 #define MOS_DEFINES_H
+
+#define	DEBUG					0			// Set to 0 for production, 1 for extra debug information
 
 // VDP specific (for VDU 23,0,n commands)
 //
