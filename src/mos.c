@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	21/03/2023
+ * Last Updated:	26/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -26,6 +26,7 @@
  * 15/03/2023:		Added mos_cmdCOPY, mos_COPY, mos_GETRTC, aliase for mos_REN, made error messages a bit more user friendly
  * 19/03/2023:		Fixed compilation warnings in mos_cmdTIME
  * 21/03/2023:		Added mos_SETINTVECTOR, uses VDP values from defines.h
+ * 26/03/2023:		Fixed SET KEYBOARD command
  */
 
 #include <eZ80.h>
@@ -569,9 +570,9 @@ int mos_cmdSET(char * ptr) {
 		return 19; // Bad Parameter
 	}
 	if(strcmp(command, "KEYBOARD") == 0 && value <= 8) {
-		putch(0x17);
-		putch(0x00);
-		putch(0x01);
+		putch(23);
+		putch(0);
+		putch(VDP_keycode);
 		putch(value & 0xFF);
 		return 0;
 	}
@@ -1033,6 +1034,8 @@ void mos_SETRTC(UINT24 address) {
 //
 UINT24 mos_SETINTVECTOR(UINT8 vector, UINT24 address) {
 	void (* handler)(void) = (void *)address;
-
+	#if DEBUG > 0
+	printf("@mos_SETINTVECTOR: %02X,%06X\n\r", vector, address);
+	#endif
 	return (UINT24)set_vector(vector, handler);
 }
