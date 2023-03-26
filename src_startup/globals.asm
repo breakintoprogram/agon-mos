@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Globals
 ; Author:	Dean Belfield
 ; Created:	01/08/2022
-; Last Updated:	21/03/2023
+; Last Updated:	23/03/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added sysvars structure, cursorX, cursorY
@@ -13,6 +13,7 @@
 ; 09/03/2023:	Added vdp_protocol_count, keyascii, keydown; swapped keyascii with keycode, removed timer2
 ; 15/03/2023:	Added rtc
 ; 21/03/2023:	Added keydelay, keyrate, keyled
+; 23/03/2023:	Added gp
 
 			INCLUDE	"../src/equs.inc"
 			
@@ -43,6 +44,7 @@
 
 			XDEF	_errno
 			XDEF 	_coldBoot
+			XDEF	_gp
 			XDEF 	_callSM
 
 			XDEF	_vpd_protocol_flags
@@ -82,6 +84,7 @@ _keyled:		DS	1		; + 26h: Keyboard LED status
 
 _errno:			DS 	3		; extern int _errno
 _coldBoot:		DS	1		; extern char _coldBoot
+_gp:			DS	1		; extern char _gp
 _callSM:		DS	5		; Self-modding code for CALL.IS (HL)
 
 
