@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	21/03/2023
+; Last Updated:	26/03/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
@@ -14,6 +14,7 @@
 ; 09/03/2023:	Added FabGL virtual key data to vdp_protocol_KEY, reset is now CTRL+ALT+DEL
 ; 15/03/2023:	Added vdp_protocol_RTC
 ; 21/03/2023:	Added vdp_protocol_KEYSTATE
+; 26/03/2023:	Added vdp_protocol_GP, checks DEL above cursor block for CTRL+ALT+DEL	
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -46,6 +47,7 @@
 			XREF	_keydelay 
 			XREF	_keyrate 
 			XREF 	_keyled
+			XREF	_gp
 			XREF	_vpd_protocol_flags
 			XREF	_vdp_protocol_state
 			XREF	_vdp_protocol_cmd
@@ -140,7 +142,9 @@ vdp_protocol_vesize:	EQU	($-vdp_protocol_vector)/4
 	
 ; General Poll
 ;
-vdp_protocol_GP:	RET
+vdp_protocol_GP:	LD		A, (_vdp_protocol_data + 0)
+			LD		(_gp), A
+			RET
 
 ; Keyboard Data
 ; Received after a keypress event in the VPD
@@ -159,6 +163,8 @@ vdp_protocol_KEY:	LD		A, (_vdp_protocol_data + 0)	; ASCII key code
 ;
 ; Now check for CTRL+ALT+DEL
 ;
+			CP		130				; Check for DEL (cursor keys)
+			JR		Z, $F
 			CP		131				; Check for DEL (no numlock)
 			JR		Z, $F
 			CP		88				; And DEL (numlock)
