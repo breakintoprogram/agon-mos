@@ -20,8 +20,9 @@
  * 14/03/2023		Version 1.03: SD now uses timer0, does not require interrupt
  *								+ Stubbed command history
  * 22/03/2023:					+ Moved command history to mos_editor.c
- * 23/03/2023:					+ Increased baud rate to 1152000
+ * 23/03/2023:				RC2	+ Increased baud rate to 1152000
  * 								+ Improved ESP32->eZ80 boot sync
+ * 28/03/2023:				RC3 +
  */
 
 #include <eZ80.h>
@@ -41,7 +42,7 @@
 
 #define		MOS_version		1
 #define		MOS_revision 	3
-#define		MOS_rc			2
+#define		MOS_rc			3
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
