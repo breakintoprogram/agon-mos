@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	22/03/2023
+; Last Updated:	29/03/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -17,6 +17,7 @@
 ; 15/03/2023:	Added mos_copy, mos_getrtc, mos_setrtc, rtc, vdp_pflag_rtc
 ; 21/03/2023:	Added mos_setintvector, sysvars for keyboard status, vdu codes for vdp
 ; 22/03/2023:	The VDP commands are now indexed from 0x80
+; 29/03/2023:	Added mos_uopen, mos_uclose, mos_ugetc, mos_uputc
 
 ; VDP control (VDU 23, 0, n)
 ;
@@ -55,6 +56,10 @@ mos_copy:		EQU	11h
 mos_getrtc:		EQU	12h
 mos_setrtc:		EQU	13h
 mos_setintvector:	EQU	14h
+mos_uopen:		EQU	15h
+mos_uclose:		EQU	16h
+mos_ugetc:		EQU	17h
+mos_uputc:		EQU 	18h
 
 ; FatFS file access functions
 ;
