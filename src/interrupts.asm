@@ -2,10 +2,11 @@
 ; Title:	AGON MOS - Interrupt handlers
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	09/03/2023
+; Last Updated:	29/03/2023
 ;
 ; Modinfo:
 ; 09/03/2023:	No longer uses timer interrupt 0 for SD card timing
+; 29/03/2023:	Added support for UART1
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -21,8 +22,8 @@
 			XREF	_clock
 			XREF	_vdp_protocol_data
 			
-			XREF	serial_RX
-			XREF	serial_TX
+			XREF	UART0_serial_RX
+			XREF	UART0_serial_TX
 			XREF	mos_api
 			XREF	vdp_protocol			
 			
@@ -55,7 +56,7 @@ _uart0_handler:		DI
 			PUSH		BC
 			PUSH		DE
 			PUSH		HL
-			CALL		serial_RX
+			CALL		UART0_serial_RX
 			LD		C, A		
 			LD		HL, _vdp_protocol_data
 			CALL		vdp_protocol
