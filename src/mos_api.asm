@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	28/03/2023
+; Last Updated:	29/03/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -17,19 +17,20 @@
 ; 21/03/2023:	Added mos_api_setintvector
 ; 24/03/2023:	Fixed bugs in mos_api_setintvector
 ; 28/03/2023:	Function mos_api_setintvector now only accepts a 24-bit pointer
+; 29/03/2023:	Added mos_api_uopen, mos_api_uclose, mos_api_ugetc, mos_api_uputc
 
 			.ASSUME	ADL = 1
 			
 			DEFINE .STARTUP, SPACE = ROM
 			SEGMENT .STARTUP
 			
-			XDEF	mos_api		
+			XDEF	mos_api	
 
-			XREF	SWITCH_A
+			XREF	SWITCH_A		; In misc.asm
 			XREF	SET_AHL24
 			XREF	SET_ADE24
 
-			XREF	_mos_OSCLI
+			XREF	_mos_OSCLI		; In mos.c
 			XREF	_mos_EDITLINE
 			XREF	_mos_LOAD
 			XREF	_mos_SAVE
@@ -48,11 +49,16 @@
 			XREF	_mos_GETRTC 
 			XREF	_mos_SETRTC 
 			XREF	_mos_SETINTVECTOR
+
+			XREF	_open_UART1		; In uart.c
+			XREF	_close_UART1
+
+			XREF	UART1_serial_GETCH	; In serial.asm
+			XREF	UART1_serial_PUTCH 
 			
-			XREF	_keyascii
+			XREF	_keyascii		; In globals.asm
 			XREF	_keycount
 			XREF	_keydown
-
 			XREF	_sysvars
 			XREF	_vpd_protocol_flags
 			
@@ -85,6 +91,10 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_getrtc		; 0x12
 			DW	mos_api_setrtc		; 0x13
 			DW	mos_api_setintvector	; 0x14
+			DW	mos_api_uopen		; 0x15
+			DW 	mos_api_uclose		; 0x16
+			DW	mos_api_ugetc		; 0x17
+			DW	mos_api_uputc		; 0x18
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -582,15 +592,54 @@ mos_api_setrtc:		LD	A, MB		; Check if MBASE is 0
 mos_api_setintvector:	LD	A, E 
 			LD	DE, 0 		; Clear DE
 			LD	E, A 		; Store the vector #
-;
-; Now set the vector 
-;
 			PUSH	HL		; void(*handler)(void)
 			PUSH	DE 		; byte vector
 			CALL	_mos_SETINTVECTOR
 			POP	DE 
 			POP	DE
 			RET 
+
+; Open UART1
+; IXU: Pointer to UART struct
+;	+0: Baud rate (24-bit, little endian)
+;	+3: Data bits
+;	+4: Stop bits
+;	+5: Parity bits
+;	+6: Flow control (0: None, 1: Hardware)
+;	+7: Enabled interrupts
+; Returns:
+;   A: Error code (0 = no error)
+;
+mos_api_uopen:		LEA	HL, IX + 0	; HLU: Pointer to struct
+			LD	A, MB 		; If in 64K segment when
+			OR	A, A 		; MB != 0 then
+			CALL	NZ, SET_AHL24 	; Convert to a 24-bit absolute pointer
+			PUSH	HL		; UART * pUART
+			CALL	_open_UART1	; Initialise the UART port
+			LD	A, L 		; The return value is in HLU
+			POP	HL 		; Tidy up the stack
+			RET 
+
+; Close UART1
+;
+mos_api_uclose:		JP	_close_UART1
+
+; Get a character from UART1
+; Returns:
+;   A: Character read
+;   F: C if successful
+;   F: NC if the UART is not open
+;
+mos_api_ugetc		JP	UART1_serial_GETCH
+
+; Write a character to UART1
+;   C: Character to write
+; Returns:
+;   F: C if successful
+;   F: NC if the UART is not open
+;
+mos_api_uputc:		LD	A, C 
+			JP	UART1_serial_PUTCH
 
 ;		
 ; Commands that have not been implemented yet
