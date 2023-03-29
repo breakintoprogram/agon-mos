@@ -2,11 +2,12 @@
  * Title:			AGON MOS - UART code
  * Author:			Dean Belfield
  * Created:			06/07/2022
- * Last Updated:	23/03/2023
+ * Last Updated:	29/03/2023
  * 
  * Modinfo:
  * 22/03/2023:		Moved putch and getch to serial.asm
  * 23/03/2023:		Fixed maths overflow in init_UART0 to work with bigger baud rates
+ * 29/03/2023:		Added support for UART1
  */
 
 #ifndef UART_H
@@ -21,6 +22,10 @@
 #define UART0_IVECT				0x18		        	//!< The UART0 interrupt vector.
 #endif
 
+#if !defined(UART1_IVECT) 								//!< If it is not defined 
+#define UART1_IVECT				0x1A		        	//!< The UART1 interrupt vector.
+#endif
+
 #define DATABITS_8				8						//!< The default number of bits per character used in the driver.
 #define DATABITS_7				7
 #define DATABITS_6				6
@@ -32,6 +37,9 @@
 #define PAR_NOPARITY			0	    	        	//!< No parity.
 #define PAR_ODPARITY			1	    	        	//!< Odd parity.
 #define PAR_EVPARITY			3	    	        	//!< Even parity.
+
+#define FCTL_NONE				0						//!< No flow control
+#define FCTL_HW					1						//!< Hardware flow control
 
 #define	UART_ERR_NONE					((BYTE)0x00)	//!< The error code for success.
 #define	UART_ERR_KBHIT					((BYTE)0x01)	//!< The error code for keyboard hit.			
@@ -155,10 +163,19 @@ typedef struct {
    BYTE		dataBits;					// The number of databits per character to be used
    BYTE		stopBits;					// The number of stopbits to be used
    BYTE		parity;						// The parity bit option to be used
+   BYTE 	flowControl;				// The flow control option (0: None, 1: Hardware)
+   BYTE		interrupts;					// The enabled interrupts
 } UART;
 
-VOID init_UART0();
-UCHAR open_UART0(UART *pUART);
+void init_UART0();
+void init_UART1();
+
+BYTE open_UART0(UART * pUART);
+BYTE open_UART1(UART * pUART);
+
+void close_UART1();
+
+extern volatile BYTE serialFlags;		// In globals.asm
 
 extern INT putch(INT ich);				// Now in serial.asm
 extern INT getch(VOID);					// Now in serial.asm
