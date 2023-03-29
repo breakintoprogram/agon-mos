@@ -124,7 +124,7 @@ BYTE open_UART1(UART * pUART) {
 	UART1_LCTL &= (~UART_LCTL_DLAB); 								// Reset DLAB; dont disturb other bits
 	UART1_MCTL = 0x00;												// Bring modem control register to reset value
 	UART1_FCTL = 0x07;												// Enable and clear hardware FIFOs
-	UART0_IER = pUART->interrupts;									// Set interrupts
+	UART1_IER = pUART->interrupts;									// Set interrupts
 
 	serialFlags |= 0x10;
 	
