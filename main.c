@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	23/03/2023
+ * Last Updated:	29/03/2023
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -22,7 +22,7 @@
  * 22/03/2023:					+ Moved command history to mos_editor.c
  * 23/03/2023:				RC2	+ Increased baud rate to 1152000
  * 								+ Improved ESP32->eZ80 boot sync
- * 28/03/2023:				RC3 +
+ * 29/03/2023:				RC3 + Added UART1 initialisation, tweaked startup sequence timings
  */
 
 #include <eZ80.h>
@@ -70,15 +70,18 @@ int wait_ESP32(UART * pUART, UINT24 baudRate) {
 	pUART->dataBits = 8;
 	pUART->stopBits = 1;
 	pUART->parity = PAR_NOPARITY;
+	pUART->flowControl = FCTL_HW;
+	pUART->interrupts = UART_IER_RECEIVEINT;
+
 	open_UART0(pUART);					// Open the UART 
 	init_timer0(10, 16, 0x00);  		// 10ms timer for delay
 	gp = 0;								// Reset the general poll byte	
-	for(t = 0; t < 4; t++) {			// A timeout loop (4 = 1 second)
+	for(t = 0; t < 20; t++) {			// A timeout loop (20 x 50ms = 1s)
 		putch(23);						// Send a general poll packet
 		putch(0);
 		putch(VDP_gp);
 		putch(1);
-		for(i = 0; i < 25; i++) {		// Wait 250ms
+		for(i = 0; i < 5; i++) {		// Wait 50ms
 			wait_timer0();
 		}
 		if(gp == 1) break;				// If general poll returned, then exit for loop
@@ -97,17 +100,18 @@ void init_interrupts(void) {
 // The main loop
 //
 int main(void) {
-	UART 	pUART;
+	UART 	pUART0;
 
 	DI();											// Ensure interrupts are disabled before we do anything
 	init_interrupts();								// Initialise the interrupt vectors
 	init_rtc();										// Initialise the real time clock
 	init_spi();										// Initialise SPI comms for the SD card interface
 	init_UART0();									// Initialise UART0 for the ESP32 interface
+	init_UART1();									// Initialise UART1
 	EI();											// Enable the interrupts now
 	
-	if(!wait_ESP32(&pUART, 1152000)) {				// Try to lock onto the ESP32 at maximum rate
-		if(!wait_ESP32(&pUART, 384000))	{			// If that fails, then fallback to the lower baud rate
+	if(!wait_ESP32(&pUART0, 1152000)) {				// Try to lock onto the ESP32 at maximum rate
+		if(!wait_ESP32(&pUART0, 384000))	{		// If that fails, then fallback to the lower baud rate
 			gp = 2;									// Flag GP as 2, just in case we need to handle this error later
 		}
 	}	
@@ -120,7 +124,7 @@ int main(void) {
 	#endif
 	printf("\n\r\n\r");
 	#if	DEBUG > 0
-	printf("@Baud Rate: %d\n\r\n\r", pUART.baudRate);
+	printf("@Baud Rate: %d\n\r\n\r", pUART0.baudRate);
 	#endif
 
 	f_mount(&fs, "", 1);							// Mount the SD card
