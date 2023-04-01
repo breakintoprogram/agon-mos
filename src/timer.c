@@ -2,18 +2,19 @@
  * Title:			AGON MOS - Timer
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	08/09/2023
+ * Last Updated:	31/03/2023
  * 
  * Modinfo:
  * 11/07/2022:		Removed unused functions
  * 24/07/2022:		Moved interrupt handler to vectors16.asm and initialisation to main
- * 08/09/2023:		Refactored
+ * 13/03/2023:		Refactored
+ * 31/03/2023:		Added wait_VDP
  */
 
 #include <eZ80.h>
 #include <defines.h>
 
-extern long SysClkFreq;
+#include "timer.h"
 
 // Configure Timer 0
 // Parameters:
@@ -66,4 +67,27 @@ unsigned short get_timer0() {
 	unsigned char l = TMR0_DR_L;
 	unsigned char h = TMR0_DR_H;
 	return (h << 8) | l;
+}
+
+// Wait for the VDP packet to come in, with a timeout
+// Parameters:
+// - mask: Mask for the packet(s) we're expecting
+// Returns:
+// - True if the packet is received, False if there is a timeout
+//
+BOOL wait_VDP(unsigned char mask) {
+	int		i;
+	BOOL	retVal = 0;
+
+	init_timer0(10, 16, 0x00);  				// 10ms timer for delay
+
+	for(i = 0; i < 5; i++) {					// A small delay loop (50ms)
+		if(vpd_protocol_flags & mask) {			// If we get a result then
+			retVal = 1;							// Set the return value to true
+			break;								// And exit the loop
+		}
+		wait_timer0();							// Wait 10ms
+	}
+	enable_timer0(0);							// Disable the timer
+	return retVal;
 }
