@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS line editor
  * Author:			Dean Belfield
  * Created:			18/09/2022
- * Last Updated:	22/03/2023
+ * Last Updated:	31/03/2023
  * 
  * Modinfo:
  * 28/09/2022:		Added clear parameter to mos_EDITLINE
@@ -11,6 +11,7 @@
  * 14/03/2023:		Tweaks ready for command history
  * 21/03/2023:		Improved backspace, and editing of long lines, after scroll, at bottom of screen
  * 22/03/2023:		Added a single-entry command line history
+ * 31/03/2023:		Added timeout for VDP protocol
  */
 
 #include <eZ80.h>
@@ -20,9 +21,10 @@
 #include <string.h>
 
 #include "defines.h"
-#include "mos_editor.h"
 #include "mos.h"
 #include "uart.h"
+#include "timer.h"
+#include "mos_editor.h"
 
 extern volatile BYTE vpd_protocol_flags;		// In globals.asm
 extern volatile BYTE keyascii;					// In globals.asm
@@ -45,7 +47,7 @@ void getCursorPos() {
 	putch(23);									// Request the cursor position
 	putch(0);
 	putch(VDP_cursor);
-	while((vpd_protocol_flags & 0x01) == 0);	// Wait until the semaphore has been set
+	wait_VDP(0x01);								// Wait until the semaphore has been set, or a timeout happens
 }
 
 // Get the current screen dimensions from the VDU
@@ -55,7 +57,7 @@ void getModeInformation() {
 	putch(23);
 	putch(0);
 	putch(VDP_mode);
-	while((vpd_protocol_flags & 0x10) == 0);	// Wait until the semaphore has been set
+	wait_VDP(0x10);								// Wait until the semaphore has been set, or a timeout happens
 }
 
 // Move cursor left
