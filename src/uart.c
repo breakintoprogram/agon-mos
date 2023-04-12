@@ -2,7 +2,7 @@
  * Title:			AGON MOS - UART code
  * Author:			Dean Belfield
  * Created:			06/07/2022
- * Last Updated:	28/03/2023
+ * Last Updated:	08/04/2023
  * 
  * Modinfo:
  * 03/08/2022:		Enabled UART0 receive interrupt
@@ -10,6 +10,7 @@
  * 22/03/2023:		Moved putch and getch to serial.asm
  * 23/03/2023:		Fixed maths overflow in init_UART0 to work with bigger baud rates
  * 28/03/2023:		Added support for UART1
+ * 08/04/2023:		Interrupts now disabled in close_UART1
  *
  * NB:
  * The UART is on Port D
@@ -136,5 +137,9 @@ BYTE open_UART1(UART * pUART) {
 // Close UART1
 //
 void close_UART1() {
+	UART1_IER = 0x00;												// Disable UART1 interrupts
+	UART1_LCTL = 0x00; 												// Bring line control register to reset value.
+	UART1_MCTL = 0x00;												// Bring modem control register to reset value.
+	UART1_FCTL = 0x00;												// Bring FIFO control register to reset value.	
 	serialFlags &= 0x0F;
 }
