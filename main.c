@@ -42,7 +42,7 @@
 
 #define		MOS_version		1
 #define		MOS_revision 	3
-#define		MOS_rc			3
+#define		MOS_rc			4
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
