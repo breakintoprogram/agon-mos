@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Globals
 ; Author:	Dean Belfield
 ; Created:	01/08/2022
-; Last Updated:	29/03/2023
+; Last Updated:	14/04/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added sysvars structure, cursorX, cursorY
@@ -15,6 +15,7 @@
 ; 21/03/2023:	Added keydelay, keyrate, keyled
 ; 23/03/2023:	Added gp
 ; 29/03/2023:	Added serialFlags
+; 14/04/2023:	Added scratchpad
 
 			INCLUDE	"../src/equs.inc"
 			
@@ -48,6 +49,7 @@
 			XDEF	_gp
 			XDEF	_serialFlags
 			XDEF 	_callSM
+			XDEF	_scratchpad
 
 			XDEF	_vpd_protocol_flags
 			XDEF	_vdp_protocol_state
@@ -98,6 +100,7 @@ _gp:			DS	1		; extern char _gp
 _serialFlags:		DS	1		; extern char _serialFlags
 
 _callSM:		DS	5		; Self-modding code for CALL.IS (HL)
+_scratchpad:		DS	8		; General purpose scratchpad RAM for use within functions
 
 
 ; VDP Protocol Flags
