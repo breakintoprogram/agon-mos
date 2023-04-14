@@ -2,13 +2,14 @@
  * Title:			FatFs Functional Configuration
  * Author:			ChaN
  * Created:			19/06/2022
- * Last Updated:	09/03/2023
+ * Last Updated:	13/04/2023
  * 
  * Modinfo:
  * 11/07/2022:		Enabled FF_USE_LABEL
  * 05/08/2022:		FF_USE_STRFUNC set to 2, FF_FS_RPATH set to 2
  * 15/02/2023:		FF_USE_STRFUNC set to 1
  * 09/03/2023:		FF_FS_NORTC set to 0
+ * 13/04/2023:		FF_FS_TINY set to 1
  */
  
 /*---------------------------------------------------------------------------/
@@ -237,7 +238,7 @@
 / System Configurations
 /---------------------------------------------------------------------------*/
 
-#define FF_FS_TINY		0
+#define FF_FS_TINY		1
 /* This option switches tiny buffer configuration. (0:Normal or 1:Tiny)
 /  At the tiny configuration, size of file object (FIL) is shrinked FF_MAX_SS bytes.
 /  Instead of private sector buffer eliminated from the file object, common sector
