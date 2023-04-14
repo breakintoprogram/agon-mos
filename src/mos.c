@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	26/03/2023
+ * Last Updated:	14/04/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -27,6 +27,7 @@
  * 19/03/2023:		Fixed compilation warnings in mos_cmdTIME
  * 21/03/2023:		Added mos_SETINTVECTOR, uses VDP values from defines.h
  * 26/03/2023:		Fixed SET KEYBOARD command
+ * 14/04/2023:		Added fat_EOF
  */
 
 #include <eZ80.h>
@@ -948,9 +949,7 @@ void	mos_FPUTC(UINT8 fh, char c) {
 //
 UINT8	mos_FEOF(UINT8 fh) {
 	if(fh > 0 && fh <= MOS_maxOpenFiles) {
-		if(f_eof(&mosFileObjects[fh - 1].fileObject) != 0) {
-			return 1;
-		}
+		return fat_EOF(&mosFileObjects[fh - 1].fileObject);
 	}
 	return 0;
 }
@@ -1038,4 +1037,17 @@ UINT24 mos_SETINTVECTOR(UINT8 vector, UINT24 address) {
 	printf("@mos_SETINTVECTOR: %02X,%06X\n\r", vector, address);
 	#endif
 	return (UINT24)set_vector(vector, handler);
+}
+
+// Check whether file is at EOF (end of file)
+// Parameters:
+// - fp: Pointer to file structure
+// Returns:
+// - 1 if EOF, otherwise 0
+//
+UINT8 fat_EOF(FIL * fp) {
+	if(f_eof(fp) != 0) {
+		return 1;
+	}
+	return 0;
 }

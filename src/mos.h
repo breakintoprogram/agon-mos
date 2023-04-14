@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	21/03/2023
+ * Last Updated:	14/04/2023
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -24,6 +24,7 @@
  * 14/03/2023:		Added mos_cmdCOPY and mos_COPY
  * 15/03/2023:		Added mos_GETRTC, mos_SETRTC
  * 21/03/2023:		Added mos_SETINTVECTOR
+ * 14/04/2023:		Added fat_EOF
  */
 
 #ifndef MOS_H
@@ -93,5 +94,7 @@ UINT24 	mos_OSCLI(char * cmd);
 UINT8 	mos_GETRTC(UINT24 address);
 void	mos_SETRTC(UINT24 address);
 UINT24	mos_SETINTVECTOR(UINT8 vector, UINT24 address);
+
+UINT8	fat_EOF(FIL * fp);
 
 #endif MOS_H
