@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	29/03/2023
+; Last Updated:	14/04/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -18,6 +18,7 @@
 ; 24/03/2023:	Fixed bugs in mos_api_setintvector
 ; 28/03/2023:	Function mos_api_setintvector now only accepts a 24-bit pointer
 ; 29/03/2023:	Added mos_api_uopen, mos_api_uclose, mos_api_ugetc, mos_api_uputc
+; 14/04/2023:	Added ffs_api_fopen, ffs_api_fclose, ffs_api_stat, ffs_api_fread, ffs_api_fwrite, ffs_api_feof, ffs_api_flseek
 
 			.ASSUME	ADL = 1
 			
@@ -49,6 +50,8 @@
 			XREF	_mos_GETRTC 
 			XREF	_mos_SETRTC 
 			XREF	_mos_SETINTVECTOR
+			
+			XREF	_fat_EOF		; In mos.c
 
 			XREF	_open_UART1		; In uart.c
 			XREF	_close_UART1
@@ -60,7 +63,15 @@
 			XREF	_keycount
 			XREF	_keydown
 			XREF	_sysvars
+			XREF	_scratchpad
 			XREF	_vpd_protocol_flags
+
+			XREF	_f_open			; In ff.c
+			XREF	_f_close
+			XREF	_f_read 
+			XREF	_f_write
+			XREF	_f_stat 
+			XREF	_f_lseek
 			
 ; Call a MOS API function
 ; 00h - 7Fh: Reserved for high level MOS calls
@@ -102,7 +113,7 @@ $$:			AND	7Fh			; Else remove the top bit
 			DW	ffs_api_fclose
 			DW	ffs_api_fread
 			DW	ffs_api_fwrite
-			DW	ffs_api_fseek
+			DW	ffs_api_flseek
 			DW	ffs_api_ftruncate
 			DW	ffs_api_fsync
 			DW	ffs_api_fforward
@@ -641,14 +652,159 @@ mos_api_ugetc		JP	UART1_serial_GETCH
 mos_api_uputc:		LD	A, C 
 			JP	UART1_serial_PUTCH
 
+; Open a file
+; HLU: Pointer to a blank FIL struct
+; DEU: Pointer to the filename (0 terminated)
+;   C: File mode
+; Returns:
+;   A: FRESULT
+;
+ffs_api_fopen:		LD	A, MB
+			OR	A, A 
+			JR	Z, $F
+			CALL	SET_AHL24
+			CALL 	SET_ADE24
+$$:			LD	A, C 				
+			LD	BC, 0
+			LD	C, A 
+			PUSH	BC		; BYTE mode
+			PUSH	DE		; const TCHAR * path
+			PUSH	HL		; FIL * fp
+			CALL	_f_open 
+			LD	A, L 		; FRESULT
+			POP	HL 		
+			POP	DE
+			POP	BC
+			RET
+
+; Close a file
+; HLU: Pointer to a blank FIL struct
+; Returns:
+;   A: FRESULT
+;
+ffs_api_fclose:		LD	A, MB
+			OR	A, A 
+			CALL	NZ, SET_AHL24
+			PUSH	HL		; FIL * fp
+			CALL	_f_close 
+			LD	A, L		; FRESULT
+			POP	HL 
+			RET
+
+; Read data from a file
+; HLU: Pointer to a FIL struct
+; DEU: Pointer to where to write the file out
+; BCU: Number of bytes to read
+; Returns:
+;   A: FRESULT
+; BCU: Number of bytes read
+;
+ffs_api_fread:		LD	A, MB 
+			OR	A, A 
+			JR	Z, $F 
+			CALL	SET_AHL24
+			CALL	SET_ADE24 
+$$:			EXX		
+			LD	HL, _scratchpad	; Scratchpad RAM
+			PUSH	HL		; UINT * br
+			EXX 
+			PUSH	BC		; UINT btr
+			PUSH	DE		; void * buff
+			PUSH	HL		; FILE * fp
+			CALL	_f_read 
+			LD	A, L 		; FRESULT
+			POP	HL
+			POP	DE 
+			POP	BC 
+			POP	BC
+			LD	BC, (_scratchpad)
+			RET 
+
+; Write data to a file
+; HLU: Pointer to a FIL struct
+; DEU: Pointer to the data to write out
+; BCU: Number of bytes to write
+; Returns:
+;   A: FRESULT
+; BCU: Number of bytes written
+;
+ffs_api_fwrite:		LD	A, MB 
+			OR	A, A 
+			JR	Z, $F 
+			CALL	SET_AHL24
+			CALL	SET_ADE24 
+$$:			EXX		
+			LD	HL, _scratchpad	; Scratchpad RAM
+			PUSH	HL		; UINT * bw
+			EXX 
+			PUSH	BC		; UINT btw
+			PUSH	DE		; void * buff
+			PUSH	HL		; FILE * fp
+			CALL	_f_write 
+			LD	A, L 		; FRESULT
+			POP	HL
+			POP	DE 
+			POP	BC 
+			POP	BC
+			LD	BC, (_scratchpad)
+			RET 	
+
+; Check file exists
+; HLU: Pointer to a FILINFO struct
+; DEU: Pointer to the filename (0 terminated)
+; Returns:
+;   A: FRESULT
+;
+ffs_api_stat:		LD	A, MB
+			OR	A, A 
+			JR	Z, $F 
+			CALL	SET_AHL24
+			CALL	SET_ADE24
+$$:			PUSH	HL		; FILEINFO * fil
+			PUSH	DE		; const TCHAR * path
+			CALL	_f_stat 
+			LD	A, L 		; FRESULT
+			POP	DE 
+			POP	HL
+			RET
+
+; Check for EOF
+; HLU: Pointer to a FILINFO struct
+; Returns:
+;   A: 1 if end of file, otherwise 0
+;
+ffs_api_feof:		LD	A, MB 
+			OR	A, A 
+			CALL	NZ, SET_AHL24
+			PUSH	HL		; FILEINFO * fil
+			CALL	_fat_EOF 
+			LD	A, L 		; EOF
+			POP	HL
+			RET 
+
+; Move the read/write pointer in a file
+; HLU: Pointer to a FIL struct
+; DEU: Least significant 3 bytes of the offset from the start of the file (DWORD)
+;   C: Most significant byte of the offset
+; Returns:
+;   A: FRESULT
+;
+ffs_api_flseek:		LD	A, MB
+			OR	A, A 
+			CALL	NZ, SET_AHL24
+			PUSH	BC 		; FSIZE_t ofs (msb)
+			PUSH	DE		; FSIZE_t ofs (lsw)
+			PUSH	HL		; FIL * fp
+			CALL	_f_lseek 
+			LD	A, L
+			POP	HL		
+			POP	DE
+			POP	BC
+			RET 
+
 ;		
 ; Commands that have not been implemented yet
 ;
-ffs_api_fopen:
-ffs_api_fclose:
-ffs_api_fread:		
-ffs_api_fwrite:		
-ffs_api_fseek:		
 ffs_api_ftruncate:	
 ffs_api_fsync:		
 ffs_api_fforward:	
@@ -658,7 +814,6 @@ ffs_api_fputc:
 ffs_api_fputs:		
 ffs_api_fprintf:	
 ffs_api_ftell:		
-ffs_api_feof:		
 ffs_api_fsize:		
 ffs_api_ferror:		
 ffs_api_dopen:		
@@ -666,7 +821,6 @@ ffs_api_dclose:
 ffs_api_dread:		
 ffs_api_dfindfirst:	
 ffs_api_dfindnext:	
-ffs_api_stat:		
 ffs_api_unlink:		
 ffs_api_rename:		
 ffs_api_chmod:		
