@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	14/04/2023
+ * Last Updated:	15/04/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -28,6 +28,7 @@
  * 21/03/2023:		Added mos_SETINTVECTOR, uses VDP values from defines.h
  * 26/03/2023:		Fixed SET KEYBOARD command
  * 14/04/2023:		Added fat_EOF
+ * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
  */
 
 #include <eZ80.h>
@@ -918,14 +919,16 @@ UINT24 mos_FCLOSE(UINT8 fh) {
 //
 UINT8	mos_FGETC(UINT8 fh) {
 	FRESULT fr;
+	FIL	*	fo;
 	UINT	br;
 	char	c;
 
-	if(fh > 0 && fh <= MOS_maxOpenFiles) {
-		fr = f_read(&mosFileObjects[fh - 1].fileObject, &c, 1, &br); 
+	fo = (FIL *)mos_GETFIL(fh);
+	if(fo > 0) {
+		fr = f_read(fo, &c, 1, &br); 
 		if(fr == FR_OK) {
 			return	c;
-		}
+		}		
 	}
 	return 0;
 }
@@ -936,9 +939,70 @@ UINT8	mos_FGETC(UINT8 fh) {
 // - c: Byte to write
 //
 void	mos_FPUTC(UINT8 fh, char c) {
-	if(fh > 0 && fh <= MOS_maxOpenFiles) {
-		f_putc(c, &mosFileObjects[fh - 1].fileObject);
+	FIL * fo = (FIL *)mos_GETFIL(fh);
+
+	if(fo > 0) {
+		f_putc(c, fo);
 	}
+}
+
+// Read a block of data into a buffer
+// Parameters:
+// - fh: File handle
+// - buffer: Address to write the data into
+// - btr: Number of bytes to read
+// Returns:
+// - Number of bytes read
+//
+UINT24	mos_FREAD(UINT8 fh, UINT24 buffer, UINT24 btr) {
+	FRESULT fr;
+	FIL *	fo = (FIL *)mos_GETFIL(fh);
+	UINT	br = 0;
+
+	if(fo > 0) {
+		fr = f_read(fo, (const void *)buffer, btr, &br);
+		if(fr == FR_OK) {
+			return br;
+		}
+	}
+	return 0;
+}
+
+// Write a block of data from a buffer
+// Parameters:
+// - fh: File handle
+// - buffer: Address to read the data from
+// - btw: Number of bytes to write
+// Returns:
+// - Number of bytes written
+//
+UINT24	mos_FWRITE(UINT8 fh, UINT24 buffer, UINT24 btw) {
+	FRESULT fr;
+	FIL *	fo = (FIL *)mos_GETFIL(fh);
+	UINT	bw = 0;
+
+	if(fo > 0) {
+		fr = f_write(fo, (const void *)buffer, btw, &bw);
+		if(fr == FR_OK) {
+			return bw;
+		}
+	}
+	return 0;
+}
+
+// Move the read/write pointer in a file
+// Parameters:
+// - offset: Position of the pointer relative to the start of the file
+// Returns:
+// - FRESULT
+// 
+UINT8  	mos_FLSEEK(UINT8 fh, UINT32 offset) {
+	FIL * fo = (FIL *)mos_GETFIL(fh);
+
+	if(fo > 0) {
+		return f_lseek(fo, offset);
+	}
+	return FR_INVALID_OBJECT;
 }
 
 // Check whether file is at EOF (end of file)
@@ -948,8 +1012,10 @@ void	mos_FPUTC(UINT8 fh, char c) {
 // - 1 if EOF, otherwise 0
 //
 UINT8	mos_FEOF(UINT8 fh) {
-	if(fh > 0 && fh <= MOS_maxOpenFiles) {
-		return fat_EOF(&mosFileObjects[fh - 1].fileObject);
+	FIL * fo = (FIL *)mos_GETFIL(fh);
+
+	if(fo > 0) {
+		return fat_EOF(fo);
 	}
 	return 0;
 }
@@ -1037,6 +1103,24 @@ UINT24 mos_SETINTVECTOR(UINT8 vector, UINT24 address) {
 	printf("@mos_SETINTVECTOR: %02X,%06X\n\r", vector, address);
 	#endif
 	return (UINT24)set_vector(vector, handler);
+}
+
+// Get a FIL struct from a filehandle
+// Parameters:
+// - fh: The filehandle (indexed from 1)
+// Returns:
+// - address of the file structure, or 0 if invalid fh
+//
+UINT24	mos_GETFIL(UINT8 fh) {
+	t_mosFileObject	* mfo;
+
+	if(fh > 0 && fh <= MOS_maxOpenFiles) {
+		mfo = &mosFileObjects[fh - 1];
+		if(mfo->free > 0) {
+			return (UINT24)(&mfo->fileObject);
+		}
+	}
+	return 0;
 }
 
 // Check whether file is at EOF (end of file)
