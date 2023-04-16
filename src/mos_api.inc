@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	13/04/2023
+; Last Updated:	15/04/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -19,6 +19,7 @@
 ; 22/03/2023:	The VDP commands are now indexed from 0x80
 ; 29/03/2023:	Added mos_uopen, mos_uclose, mos_ugetc, mos_uputc
 ; 13/04/2023:	Added FatFS file structures (FFOBJID, FIL, DIR, FILINFO)
+; 15/04/2023:	Added mos_getfil, mos_fread, mos_fwrite and mos_flseek
 
 ; VDP control (VDU 23, 0, n)
 ;
@@ -61,6 +62,10 @@ mos_uopen:		EQU	15h
 mos_uclose:		EQU	16h
 mos_ugetc:		EQU	17h
 mos_uputc:		EQU 	18h
+mos_getfil:		EQU	19h
+mos_fread:		EQU	1Ah
+mos_fwrite:		EQU	1Bh
+mos_flseek:		EQU	1Ch
 
 ; FatFS file access functions
 ;
