@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Miscellaneous helper functions
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	20/03/2023
+; Last Updated: 15/04/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added SET_AHL24 and SET_ADE24
@@ -11,6 +11,7 @@
 ; 19/11/2022:	Added exec24 and params for exec16/24 functions
 ; 09/03/2023:	Added wait_timer0
 ; 20/03/2023:	Function exec24 now preserves MB
+; 15/04/2023:	Added GET_AHL24
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -22,6 +23,7 @@
 							
 			XDEF	SWITCH_A
 			XDEF	SET_AHL24
+			XDEF	GET_AHL24
 			XDEF	SET_ADE24
 			
 			XDEF	__exec16
@@ -49,12 +51,21 @@ SWITCH_A:		EX	(SP), HL		; Swap HL with the contents of the top of the stack
 			
 ; Set the MSB of HL (U) to A
 ;
-SET_AHL24:		PUSH	HL
+SET_AHL24:		PUSH	HL			
 			LD	HL, 2
 			ADD	HL, SP
 			LD	(HL), A
 			POP	HL
 			RET	
+
+; Get the MSB of HL (U) in A
+;
+GET_AHL24:		PUSH	HL 
+			LD	HL, 2
+			ADD	HL, SP
+			LD	A, (HL)
+			POP	HL
+			RET
 
 ; Set the MSB of DE (U) to A
 ;
