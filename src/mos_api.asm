@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	14/04/2023
+; Last Updated:	15/04/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -19,6 +19,7 @@
 ; 28/03/2023:	Function mos_api_setintvector now only accepts a 24-bit pointer
 ; 29/03/2023:	Added mos_api_uopen, mos_api_uclose, mos_api_ugetc, mos_api_uputc
 ; 14/04/2023:	Added ffs_api_fopen, ffs_api_fclose, ffs_api_stat, ffs_api_fread, ffs_api_fwrite, ffs_api_feof, ffs_api_flseek
+; 15/04/2023:	Added mos_api_getfil, mos_api_fread, mos_api_fwrite and mos_api_flseek
 
 			.ASSUME	ADL = 1
 			
@@ -29,6 +30,7 @@
 
 			XREF	SWITCH_A		; In misc.asm
 			XREF	SET_AHL24
+			XREF	GET_AHL24
 			XREF	SET_ADE24
 
 			XREF	_mos_OSCLI		; In mos.c
@@ -50,6 +52,10 @@
 			XREF	_mos_GETRTC 
 			XREF	_mos_SETRTC 
 			XREF	_mos_SETINTVECTOR
+			XREF	_mos_GETFIL
+			XREF	_mos_FREAD
+			XREF	_mos_FWRITE
+			XREF	_mos_FLSEEK
 			
 			XREF	_fat_EOF		; In mos.c
 
@@ -106,6 +112,10 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW 	mos_api_uclose		; 0x16
 			DW	mos_api_ugetc		; 0x17
 			DW	mos_api_uputc		; 0x18
+			DW	mos_api_getfil		; 0x19
+			DW	mos_api_fread		; 0x1A
+			DW	mos_api_fwrite		; 0x1B
+			DW	mos_api_flseek		; 0x1C
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -652,6 +662,69 @@ mos_api_ugetc		JP	UART1_serial_GETCH
 mos_api_uputc:		LD	A, C 
 			JP	UART1_serial_PUTCH
 
+; Convert a file handle to a FIL structure pointer
+;   C: Filehandle
+; Returns:
+; HLU: Pointer to a FIL struct
+;
+mos_api_getfil:		PUSH	BC		; UINT8 fh
+			CALL	_mos_GETFIL
+			POP	BC 
+			RET
+
+; Read a block of data from a file
+;   C: Filehandle
+; HLU: Pointer to where to write the data to
+; DEU: Number of bytes to read
+; Returns:
+; DEU: Number of bytes read
+;
+mos_api_fread:		PUSH	DE		; UINT24 btr
+			PUSH	HL		; UINT24 buffer
+			PUSH	BC		; UINT8 fh
+			CALL	_mos_FREAD
+			LD	(_scratchpad), HL 
+			POP	BC
+			POP	HL
+			POP	DE
+			LD	DE, (_scratchpad)
+			RET
+
+; Write a block of data to a file
+;  C: Filehandle
+; HLU: Pointer to where the data is
+; DEU: Number of bytes to write
+; Returns:
+; DEU: Number of bytes read
+;
+mos_api_fwrite:		PUSH	DE		; UINT24 btr
+			PUSH	HL		; UINT24 buffer
+			PUSH	BC		; UINT8 fh
+			CALL	_mos_FWRITE
+			LD	(_scratchpad), HL 
+			POP	BC
+			POP	HL
+			POP	DE
+			LD	DE, (_scratchpad)
+			RET
+
+; Move the read/write pointer in a file
+;   C: Filehandle
+; HLU: Least significant 3 bytes of the offset from the start of the file (DWORD)
+;   E: Most significant byte of the offset
+; Returns:
+;   A: FRESULT
+;
+mos_api_flseek:		PUSH 	DE		; UINT32 offset (msb)
+			PUSH	HL 		; UINT32 offset (lsb)
+			PUSH	BC		; UINT8 fh
+			CALL	_mos_FLSEEK
+			LD	A, L 		; FRESULT
+			POP	BC
+			POP	HL
+			POP	DE
+			RET
+
 ; Open a file
 ; HLU: Pointer to a blank FIL struct
 ; DEU: Pointer to the filename (0 terminated)
@@ -659,15 +732,16 @@ mos_api_uputc:		LD	A, C
 ; Returns:
 ;   A: FRESULT
 ;
-ffs_api_fopen:		LD	A, MB
-			OR	A, A 
-			JR	Z, $F
-			CALL	SET_AHL24
-			CALL 	SET_ADE24
-$$:			LD	A, C 				
-			LD	BC, 0
-			LD	C, A 
-			PUSH	BC		; BYTE mode
+ffs_api_fopen:		LD	A, MB		; A: MB
+			OR	A, A 		; Check whether MB is 0, i.e. in 24-bit mode
+			JR	Z, $F		; It is, so skip as all addresses can be assumed to be 24-bit
+			CALL 	SET_ADE24	; Convert DE to an address in segment A (MB)
+			CALL	GET_AHL24	; Get MSB of HL
+			OR	A, A 		; Does it already contain a value? (fetched using mos_api_getfil?)
+			LD	A, MB		; A: MB
+			CALL	Z, SET_AHL24	; No it's zero, so convert HL to an address in segment A (MB)
+;
+$$:			PUSH	BC		; BYTE mode
 			PUSH	DE		; const TCHAR * path
 			PUSH	HL		; FIL * fp
 			CALL	_f_open 
@@ -684,8 +758,13 @@ $$:			LD	A, C
 ;
 ffs_api_fclose:		LD	A, MB
 			OR	A, A 
-			CALL	NZ, SET_AHL24
-			PUSH	HL		; FIL * fp
+			JR	Z, $F
+			CALL	GET_AHL24
+			OR 	A, A 
+			LD	A, MB
+			CALL	Z, SET_AHL24
+;
+$$:			PUSH	HL		; FIL * fp
 			CALL	_f_close 
 			LD	A, L		; FRESULT
 			POP	HL 
@@ -699,11 +778,15 @@ ffs_api_fclose:		LD	A, MB
 ;   A: FRESULT
 ; BCU: Number of bytes read
 ;
-ffs_api_fread:		LD	A, MB 
-			OR	A, A 
-			JR	Z, $F 
-			CALL	SET_AHL24
-			CALL	SET_ADE24 
+ffs_api_fread:		LD	A, MB		; A: MB
+			OR	A, A 		; Check whether MB is 0, i.e. in 24-bit mode
+			JR	Z, $F		; It is, so skip as all addresses can be assumed to be 24-bit
+			CALL 	SET_ADE24	; Convert DE to an address in segment A (MB)
+			CALL	GET_AHL24	; Get MSB of HL
+			OR	A, A 		; Does it already contain a value? (fetched using mos_api_getfil?)
+			LD	A, MB		; A: MB
+			CALL	Z, SET_AHL24	; No it's zero, so convert HL to an address in segment A (MB)
+;
 $$:			EXX		
 			LD	HL, _scratchpad	; Scratchpad RAM
 			PUSH	HL		; UINT * br
@@ -728,11 +811,15 @@ $$:			EXX
 ;   A: FRESULT
 ; BCU: Number of bytes written
 ;
-ffs_api_fwrite:		LD	A, MB 
-			OR	A, A 
-			JR	Z, $F 
-			CALL	SET_AHL24
-			CALL	SET_ADE24 
+ffs_api_fwrite:		LD	A, MB		; A: MB
+			OR	A, A 		; Check whether MB is 0, i.e. in 24-bit mode
+			JR	Z, $F		; It is, so skip as all addresses can be assumed to be 24-bit
+			CALL 	SET_ADE24	; Convert DE to an address in segment A (MB)
+			CALL	GET_AHL24	; Get MSB of HL
+			OR	A, A 		; Does it already contain a value? (fetched using mos_api_getfil?)
+			LD	A, MB		; A: MB
+			CALL	Z, SET_AHL24	; No it's zero, so convert HL to an address in segment A (MB)
+;
 $$:			EXX		
 			LD	HL, _scratchpad	; Scratchpad RAM
 			PUSH	HL		; UINT * bw
@@ -755,11 +842,15 @@ $$:			EXX
 ; Returns:
 ;   A: FRESULT
 ;
-ffs_api_stat:		LD	A, MB
-			OR	A, A 
-			JR	Z, $F 
-			CALL	SET_AHL24
-			CALL	SET_ADE24
+ffs_api_stat:		LD	A, MB		; A: MB
+			OR	A, A 		; Check whether MB is 0, i.e. in 24-bit mode
+			JR	Z, $F		; It is, so skip as all addresses can be assumed to be 24-bit
+			CALL 	SET_ADE24	; Convert DE to an address in segment A (MB)
+			CALL	GET_AHL24	; Get MSB of HL
+			OR	A, A 		; Does it already contain a value? (fetched using mos_api_getfil?)
+			LD	A, MB		; A: MB
+			CALL	Z, SET_AHL24	; No it's zero, so convert HL to an address in segment A (MB)
+;
 $$:			PUSH	HL		; FILEINFO * fil
 			PUSH	DE		; const TCHAR * path
 			CALL	_f_stat 
@@ -773,10 +864,15 @@ $$:			PUSH	HL		; FILEINFO * fil
 ; Returns:
 ;   A: 1 if end of file, otherwise 0
 ;
-ffs_api_feof:		LD	A, MB 
+ffs_api_feof:		LD	A, MB
 			OR	A, A 
-			CALL	NZ, SET_AHL24
-			PUSH	HL		; FILEINFO * fil
+			JR	Z, $F
+			CALL	GET_AHL24
+			OR 	A, A 
+			LD	A, MB
+			CALL	Z, SET_AHL24
+;
+$$:			PUSH	HL		; FILEINFO * fil
 			CALL	_fat_EOF 
 			LD	A, L 		; EOF
 			POP	HL
@@ -791,8 +887,13 @@ ffs_api_feof:		LD	A, MB
 ;
 ffs_api_flseek:		LD	A, MB
 			OR	A, A 
-			CALL	NZ, SET_AHL24
-			PUSH	BC 		; FSIZE_t ofs (msb)
+			JR	Z, $F
+			CALL	GET_AHL24
+			OR 	A, A 
+			LD	A, MB
+			CALL	Z, SET_AHL24
+;
+$$:			PUSH	BC 		; FSIZE_t ofs (msb)
 			PUSH	DE		; FSIZE_t ofs (lsw)
 			PUSH	HL		; FIL * fp
 			CALL	_f_lseek 
