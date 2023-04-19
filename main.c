@@ -42,7 +42,7 @@
 
 #define		MOS_version		1
 #define		MOS_revision 	3
-#define		MOS_rc			4
+#define		MOS_rc			0
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -136,7 +136,7 @@ int main(void) {
 		mos_BOOT("autoexec.txt", cmd, sizeof cmd);	// Then load and run the config file
 	}	
 	#endif
-	
+
 	// The main loop
 	//
 	while(1) {
