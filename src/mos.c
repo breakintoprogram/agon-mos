@@ -29,7 +29,7 @@
  * 26/03/2023:		Fixed SET KEYBOARD command
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
- * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE
+ * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS
  * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
  * 08/07/2023:		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
  * 15/09/2023:		Function mos_trim now includes the asterisk character as whitespace
@@ -87,6 +87,7 @@ static t_mosCommand mosCommands[] = {
 	{ "TIME", 		&mos_cmdTIME,		HELP_TIME	},
 	{ "CREDITS",		&mos_cmdCREDITS,	HELP_CREDITS	},
 	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE	},
+	{ "CLS",		&mos_cmdCLS,		HELP_CLS	},
 	{ "HELP",		&mos_cmdHELP,		HELP_HELP	},
 };
 
@@ -706,6 +707,16 @@ int mos_cmdTYPE(char * ptr) {
 	return fr;
 }
 
+// CLS
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int	mos_cmdCLS(char *ptr) {
+	putchar(12);
+	return 0;
+}
 
 // HELP
 // Parameters:
