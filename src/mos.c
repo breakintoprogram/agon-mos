@@ -49,6 +49,7 @@
 #include "uart.h"
 #include "clock.h"
 #include "ff.h"
+#include "strings.h"
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));	// In vectors16.asm
 
@@ -66,24 +67,25 @@ t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 // Array of MOS commands and pointer to the C function to run
 //
 static t_mosCommand mosCommands[] = {
-	{ ".", 			&mos_cmdDIR		},
-	{ "DIR",		&mos_cmdDIR		},
-	{ "CAT",		&mos_cmdDIR		},
-	{ "LOAD",		&mos_cmdLOAD	},
-	{ "SAVE", 		&mos_cmdSAVE	},
-	{ "DELETE",		&mos_cmdDEL		},
-	{ "ERASE",		&mos_cmdDEL		},
-	{ "JMP",		&mos_cmdJMP		},
-	{ "RUN", 		&mos_cmdRUN		},
-	{ "CD", 		&mos_cmdCD		},
-	{ "RENAME",		&mos_cmdREN		},
-	{ "MOVE",		&mos_cmdREN		},
-	{ "MKDIR", 		&mos_cmdMKDIR	},
-	{ "COPY", 		&mos_cmdCOPY	},
-	{ "SET",		&mos_cmdSET		},
-	{ "VDU",		&mos_cmdVDU		},
-	{ "TIME", 		&mos_cmdTIME	},
-	{ "CREDITS",	&mos_cmdCREDITS	},
+	{ ".", 			&mos_cmdDIR,		HELP_CAT	},
+	{ "DIR",		&mos_cmdDIR,		HELP_CAT	},
+	{ "CAT",		&mos_cmdDIR,		HELP_CAT	},
+	{ "LOAD",		&mos_cmdLOAD,		HELP_LOAD	},
+	{ "SAVE", 		&mos_cmdSAVE,		HELP_SAVE	},
+	{ "DELETE",		&mos_cmdDEL,		HELP_DELETE	},
+	{ "ERASE",		&mos_cmdDEL,		HELP_DELETE	},
+	{ "JMP",		&mos_cmdJMP,		HELP_JMP	},
+	{ "RUN", 		&mos_cmdRUN,		HELP_RUN	},
+	{ "CD", 		&mos_cmdCD,		HELP_CD		},
+	{ "RENAME",		&mos_cmdREN,		HELP_RENAME	},
+	{ "MOVE",		&mos_cmdREN,		HELP_RENAME	},
+	{ "MKDIR", 		&mos_cmdMKDIR,		HELP_MKDIR	},
+	{ "COPY", 		&mos_cmdCOPY,		HELP_COPY	},
+	{ "SET",		&mos_cmdSET,		HELP_SET	},
+	{ "VDU",		&mos_cmdVDU,		HELP_VDU	},
+	{ "TIME", 		&mos_cmdTIME,		HELP_TIME	},
+	{ "CREDITS",		&mos_cmdCREDITS,	HELP_CREDITS	},
+	{ "HELP",		&mos_cmdHELP,		HELP_HELP	},
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -681,6 +683,40 @@ int mos_cmdCREDITS(char *ptr) {
 	printf("FabGL 1.0.8 (c) 2019-2022 by Fabrizio Di Vittorio\n\r");
 	printf("FatFS R0.14b (c) 2021 ChaN\n\r");
 	printf("\n\r");
+	return 0;
+}
+
+// HELP
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// -  0: success
+//   -1: command not found
+//
+int mos_cmdHELP(char *ptr) {
+	int i;
+	int found = 0;
+	char *cmd;
+
+	mos_parseString(NULL, &cmd);
+	if (cmd != NULL && strcasecmp(cmd, "all") == 0)
+		cmd = NULL;
+
+	for (i = 0; i < sizeof(mosCommands) / sizeof(mosCommands[0]); ++i) {
+		if (cmd == NULL)
+			printf("%s\r\n", mosCommands[i].help);
+		else
+			if (strcasecmp(cmd, mosCommands[i].name) == 0) {
+				printf("%s", mosCommands[i].help);
+				found = 1;
+			}
+	}
+
+	if (cmd != NULL && !found) {
+		printf("Error: '%s' not found\r\n", cmd);
+		return -1;
+	}
+
 	return 0;
 }
 
