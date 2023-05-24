@@ -54,7 +54,6 @@ extern char 			coldBoot;		// 1 = cold boot, 0 = warm boot
 extern volatile	char 	keycode;		// Keycode 
 extern volatile char	gp;				// General poll variable
 
-static FATFS 	fs;						// Handle for the file system
 static char  	cmd[256];				// Array for the command line handler
 
 // Wait for the ESP32 to respond with a GP packet to signify it is ready
@@ -128,7 +127,7 @@ int main(void) {
 	printf("@Baud Rate: %d\n\r\n\r", pUART0.baudRate);
 	#endif
 
-	f_mount(&fs, "", 1);							// Mount the SD card
+	(void)mos_mount();							// Mount the SD card
 
 	// Load the autoexec.bat config file
 	//
