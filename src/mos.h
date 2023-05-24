@@ -26,7 +26,7 @@
  * 21/03/2023:		Added mos_SETINTVECTOR
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK
- * 24/05/2023:		Added mos_cmdHELP
+ * 24/05/2023:		Added mos_cmdHELP, mos_cmdTYPE
  */
 
 #ifndef MOS_H
@@ -74,10 +74,12 @@ int		mos_cmdSET(char *ptr);
 int		mos_cmdVDU(char *ptr);
 int		mos_cmdTIME(char *ptr);
 int		mos_cmdCREDITS(char *ptr);
+int		mos_cmdTYPE(char *ptr);
 int		mos_cmdHELP(char *ptr);
 
 UINT24	mos_LOAD(char * filename, UINT24 address, UINT24 size);
 UINT24	mos_SAVE(char * filename, UINT24 address, UINT24 size);
+UINT24	mos_TYPE(char * filename);
 UINT24	mos_CD(char * path);
 UINT24	mos_DIR(char * path);
 UINT24	mos_DEL(char * filename);
@@ -163,6 +165,9 @@ UINT8	fat_EOF(FIL * fp);
 
 #define HELP_VDU	"*VDU <char1> <char2> ... <charN>\r\n"		\
 			"Write a stream of characters to the VDP\r\n"
+
+#define HELP_TYPE	"*TYPE <filename>\r\n"				\
+			"Display the contents of a file on the screen\r\n"
 
 #define HELP_HELP	"*HELP [ <command> | all ]\r\n"			\
 			"Display help on a single or all commands.\r\n"	\

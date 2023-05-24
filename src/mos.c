@@ -29,6 +29,7 @@
  * 26/03/2023:		Fixed SET KEYBOARD command
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
+ * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE
  */
 
 #include <eZ80.h>
@@ -81,6 +82,7 @@ static t_mosCommand mosCommands[] = {
 	{ "VDU",		&mos_cmdVDU,		HELP_VDU	},
 	{ "TIME", 		&mos_cmdTIME,		HELP_TIME	},
 	{ "CREDITS",		&mos_cmdCREDITS,	HELP_CREDITS	},
+	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE	},
 	{ "HELP",		&mos_cmdHELP,		HELP_HELP	},
 };
 
@@ -654,6 +656,25 @@ int mos_cmdCREDITS(char *ptr) {
 	return 0;
 }
 
+// TYPE <filename>
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdTYPE(char * ptr) {
+	FRESULT	fr;
+	char *  filename;
+	UINT24 	addr;
+
+	if(!mos_parseString(NULL, &filename))
+		return 19; // Bad Parameter
+
+	fr = mos_TYPE(filename);
+	return fr;
+}
+
+
 // HELP
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
@@ -730,6 +751,38 @@ UINT24	mos_SAVE(char * filename, UINT24 address, UINT24 size) {
 		fr = f_write(&fil, (void *)address, size, &br);
 	}
 	f_close(&fil);	
+	return fr;
+}
+
+// Display a file from SD card on the screen
+// Parameters:
+// - filename: Path of file to load
+// Returns:
+// - FatFS return code
+//
+UINT24 mos_TYPE(char * filename) {
+	FRESULT	fr;
+	FIL	fil;
+	UINT   	br;
+	void * 	dest;
+	FSIZE_t fSize;
+	char	buf[512];
+	int	i;
+
+	fr = f_open(&fil, filename, FA_READ);
+	if(fr != FR_OK)
+		goto out1;
+
+	while (1) {
+		fr = f_read(&fil, (void *)buf, sizeof buf, &br);
+		if (br == 0)
+			break;
+		for (i = 0; i < br; ++i)
+			putchar(buf[i]);
+	}
+
+	f_close(&fil);
+out1:
 	return fr;
 }
 
