@@ -26,7 +26,7 @@
  * 21/03/2023:		Added mos_SETINTVECTOR
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK
- * 24/05/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS
+ * 24/05/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT
  * 30/05/2023:		Function mos_FGETC now returns EOF flag
  * 08/07/2023		Added mos_trim function
  */
@@ -59,6 +59,7 @@ char *	mos_strtok_r(char *s1, const char *s2, char **ptr);
 int		mos_exec(char * buffer);
 UINT8 	mos_execMode(UINT8 * ptr);
 
+int	mos_mount(void);
 
 BOOL 	mos_parseNumber(char * ptr, UINT24 * p_Value);
 BOOL	mos_parseString(char * ptr, char ** p_Value);
@@ -79,6 +80,7 @@ int		mos_cmdTIME(char *ptr);
 int		mos_cmdCREDITS(char *ptr);
 int		mos_cmdTYPE(char *ptr);
 int		mos_cmdCLS(char *ptr);
+int		mos_cmdMOUNT(char *ptr);
 int		mos_cmdHELP(char *ptr);
 
 UINT24	mos_LOAD(char * filename, UINT24 address, UINT24 size);
@@ -176,11 +178,14 @@ UINT8	fat_EOF(FIL * fp);
 #define HELP_CLS	"*CLS\r\n"					\
 			"Clear the screen\r\n"
 
+#define HELP_MOUNT	"*MOUNT\r\n"					\
+			"(Re-)mount the MicroSD card\r\n"
+
 #define HELP_HELP	"*HELP [ <command> | all ]\r\n"			\
 			"Display help on a single or all commands.\r\n"	\
 			"List of commands:\r\n"				\
 			"CAT, CD, COPY, CREDITS, DELETE, JMP, \r\n"	\
 			"LOAD, MKDIR, RENAME, RUN, SAVE, SET, \r\n"	\
-			"TIME, VDU, HELP.\r\n"
+			"TIME, VDU, TYPE, CLS, MOUNT, HELP.\r\n"
 
 #endif MOS_H

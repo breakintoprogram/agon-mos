@@ -29,7 +29,7 @@
  * 26/03/2023:		Fixed SET KEYBOARD command
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
- * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS
+ * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT, mos_mount
  * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
  * 08/07/2023:		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
  * 15/09/2023:		Function mos_trim now includes the asterisk character as whitespace
@@ -61,6 +61,7 @@ extern volatile	BYTE keyascii;					// In globals.asm
 extern volatile	BYTE vpd_protocol_flags;		// In globals.asm
 extern BYTE 	rtc;							// In globals.asm
 
+static FATFS	fs;					// Handle for the file system
 static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
 
 t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
@@ -88,6 +89,7 @@ static t_mosCommand mosCommands[] = {
 	{ "CREDITS",		&mos_cmdCREDITS,	HELP_CREDITS	},
 	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE	},
 	{ "CLS",		&mos_cmdCLS,		HELP_CLS	},
+	{ "MOUNT",		&mos_cmdMOUNT,		HELP_MOUNT	},
 	{ "HELP",		&mos_cmdHELP,		HELP_HELP	},
 };
 
@@ -718,6 +720,21 @@ int	mos_cmdCLS(char *ptr) {
 	return 0;
 }
 
+// MOUNT
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int	mos_cmdMOUNT(char *ptr) {
+	int fr;
+
+	fr = mos_mount();
+	if (fr != FR_OK)
+		mos_error(fr);
+	return 0;
+}
+
 // HELP
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
@@ -1258,3 +1275,14 @@ UINT8 fat_EOF(FIL * fp) {
 	}
 	return 0;
 }
+
+// (Re-)mount the MicroSD card
+// Parameters:
+// - None
+// Returns:
+// - fatfs error code
+//
+int mos_mount(void) {
+	return f_mount(&fs, "", 1);			// Mount the SD card
+}
+
