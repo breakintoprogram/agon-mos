@@ -21,6 +21,7 @@
 ; 14/04/2023:	Added ffs_api_fopen, ffs_api_fclose, ffs_api_stat, ffs_api_fread, ffs_api_fwrite, ffs_api_feof, ffs_api_flseek
 ; 15/04/2023:	Added mos_api_getfil, mos_api_fread, mos_api_fwrite and mos_api_flseek
 ; 30/05/2023:	Fixed mos_api_fgetc to set carry if at end of file
+; 02/06/2023:	[LuzrBum] redirected mos_ugetc to UART1_serial_RX, to achieve a non-blocking UART1 read. Breaks backwards compatibility for apps that require block 
 
 			.ASSUME	ADL = 1
 			
@@ -65,6 +66,7 @@
 
 			XREF	UART1_serial_GETCH	; In serial.asm
 			XREF	UART1_serial_PUTCH 
+			XREF	UART1_serial_RX		; For non-blocking read
 			
 			XREF	_keyascii		; In globals.asm
 			XREF	_keycount
@@ -647,13 +649,13 @@ mos_api_uopen:		LEA	HL, IX + 0	; HLU: Pointer to struct
 ;
 mos_api_uclose:		JP	_close_UART1
 
-; Get a character from UART1
+; Get a character from UART1 (non-blocking)
 ; Returns:
 ;   A: Character read
 ;   F: C if successful
 ;   F: NC if the UART is not open
 ;
-mos_api_ugetc		JP	UART1_serial_GETCH
+mos_api_ugetc		JP	UART1_serial_RX		; For non-blocking read - original value was UART1_serial_GETCH
 
 ; Write a character to UART1
 ;   C: Character to write
