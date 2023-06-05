@@ -21,7 +21,7 @@
 #include "clock.h"
 
 extern volatile BYTE vpd_protocol_flags;		// In globals.asm
-extern volatile BYTE rtcEnable;
+extern volatile BYTE rtc_enable;
 
 const char * rtc_days[7][2] = {	
 	{ "Sun", "Sunday" },
@@ -51,7 +51,7 @@ const char * rtc_months[12][2] = {
 // Request an update of the RTC from the ESP32
 //
 void rtc_update() {
-	if (!rtcEnable) 
+	if (!rtc_enable) 
 		return;
 	
 	vpd_protocol_flags &= 0xDF;	// Reset bit 5

@@ -46,7 +46,7 @@
 			XDEF	_keyrate 
 			XDEF 	_keyled
 			XDEF	_scrmode
-			XDEF	_rtcEnable
+			XDEF	_rtc_enable
 
 			XDEF	_errno
 			XDEF 	_coldBoot
@@ -90,7 +90,7 @@ _keydelay:		DS	2		; + 22h: Keyboard repeat delay
 _keyrate:		DS	2		; + 24h: Keyboard repeat rate
 _keyled:		DS	1		; + 26h: Keyboard LED status
 _scrmode:		DS	1		; + 27h: Screen mode
-_rtcEnable:		DS  1		; + 28h: RTC enable status
+_rtc_enable:	DS	1		; + 28h: RTC enable status
 
 _errno:			DS 	3		; extern int _errno
 _coldBoot:		DS	1		; extern char _coldBoot

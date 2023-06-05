@@ -14,7 +14,7 @@
 			DEFINE .STARTUP, SPACE = ROM
 			SEGMENT .STARTUP
 			
-			XREF _rtcEnable
+			XREF _rtc_enable
 							
 			XDEF	__init_rtc
 			XDEF	_init_rtc
@@ -25,7 +25,7 @@ __init_rtc:
 _init_rtc:		
 			PUSH AF
 			LD	A, 1
-			LD (_rtcEnable), A
+			LD (_rtc_enable), A
 			POP AF
 			RET
 
