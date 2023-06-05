@@ -155,6 +155,7 @@ sysvar_keydelay:	EQU	22h	; 2: Keyboard repeat delay
 sysvar_keyrate:		EQU	24h	; 2: Keyboard repeat reat
 sysvar_keyled:		EQU	26h	; 1: Keyboard LED status
 sysvar_scrMode:		EQU	27h	; 1: Screen mode
+sysvar_rtcEnable:	EQU 28h ; 1: Rtc enable flag
 	
 ; Flags for the VPD protocol
 ;

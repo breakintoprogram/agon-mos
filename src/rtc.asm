@@ -13,6 +13,8 @@
 
 			DEFINE .STARTUP, SPACE = ROM
 			SEGMENT .STARTUP
+			
+			XREF _rtcEnable
 							
 			XDEF	__init_rtc
 			XDEF	_init_rtc
@@ -20,5 +22,10 @@
 ; Initialise the real time clock registers
 ;
 __init_rtc:
-_init_rtc:		RET
+_init_rtc:		
+			PUSH AF
+			LD	A, 1
+			LD (_rtcEnable), A
+			POP AF
+			RET
 
