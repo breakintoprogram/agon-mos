@@ -33,6 +33,7 @@
 			XDEF	_exec16			
 			XDEF	_exec24
 			XDEF	_wait_timer0
+			XDEF	_timer0_delay
 
 			XREF	_callSM
 			
@@ -169,3 +170,14 @@ $$:			IN0	B, (TMR0_DR_L)	; Fetch the counter L
 			POP	BC 
 			POP	AF 
 			RET
+
+_timer0_delay:
+			POP		HL
+			POP		BC
+			PUSH		BC
+			TIMER_SET_BC	0
+			TIMER_START	0
+			TIMER_WAIT	0
+			JP		(HL)
+
+END

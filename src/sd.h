@@ -88,18 +88,6 @@
 #define	SD_TYPE_FAT16			0x01
 #define	SD_TYPE_FAT32			0x02
 
-void	SD_command(BYTE cmd, DWORD arg, BYTE crc);
-
-BYTE	SD_readRes1();
-void	SD_readRes7(BYTE *res);
-
-BYTE	SD_goIdleState();
-void	SD_sendIfCond(BYTE *res);
-BYTE	SD_sendApp();
-BYTE	SD_sendOpCond();
-void	SD_readOCR(BYTE *res);
-void	SD_powerUpSeq();
-
 BYTE	SD_readBlocks(DWORD addr, BYTE *buf, WORD count);
 BYTE	SD_writeBlocks(DWORD addr, BYTE *buf, WORD count);
 

@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Equs
 ; Author:	Dean Belfield
 ; Created:	15/07/2022
-; Last Updated:	19/03/2023
+; Last Updated:	08/06/2023
 ;
 ; Modinfo:
 ; 24/07/2022:	Added TMR2_CTL
@@ -12,6 +12,10 @@
 ; 09/03/2023:	Renamed TMR2_CTL to TMR0_CTL
 ; 15/03/2023:	Added VDPP_FLAG_RTC
 ; 19/03/2023:	Fixed TMR0_RR_H to point to correct register
+; 08/06/2023:	Add MASTERCLOCK to permit clock delay calculations
+
+; System clock speed in Hz
+MASTERCLOCK:		EQU		18432000
 
 ; MOS specific
 ;

@@ -13,11 +13,10 @@
 #define SPI_H
 
 void init_spi();
-void mode_spi(int d);
 
 BYTE spi_transfer(BYTE d);
-
-void SD_CS_enable();
-void SD_CS_disable();
+BYTE spi_read_one(void);
+void spi_read(char *buf, unsigned int len);
+void spi_write(char *buf, unsigned int len);
 
 #endif SPI_H
