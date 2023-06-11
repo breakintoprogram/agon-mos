@@ -34,16 +34,6 @@ SD_CMD_LEN	.equ	6
 		XDEF		_SD_init
 		XDEF		_SD_readBlocks
 		XDEF		_SD_writeBlocks
-		XDEF		_SD_powerUpSeq
-		XDEF		_SD_goIdleState
-		XDEF		_SD_sendIfCond
-		XDEF		_SD_readOCR
-		XDEF		_SD_sendApp
-		XDEF		_SD_sendOpCond
-		XDEF		_SD_readRes1
-		XDEF		_SD_CS_enable
-		XDEF		_SD_CS_disable
-		XDEF		_SD_CS_disable_raw
 
 		XREF		_spi_transfer
 		XREF		_spi_read_one
