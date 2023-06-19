@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	15/04/2023
+ * Last Updated:	30/05/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -29,7 +29,8 @@
  * 26/03/2023:		Fixed SET KEYBOARD command
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
- * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT, mos_mount
+ * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
+ * 19/06/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT, mos_mount
  */
 
 #include <eZ80.h>
@@ -260,7 +261,7 @@ BOOL mos_parseNumber(char * ptr, UINT24 * p_Value) {
 		p++;
 	}	
 	value = strtol(p, &e, base);
-	if(p == e) {
+	if(*e != 0) {
 		return 0;
 	}
 	*p_Value = value;
@@ -1032,9 +1033,10 @@ UINT24 mos_FCLOSE(UINT8 fh) {
 // Parameters:
 // - fh: File handle
 // Returns:
-// - Byte read
+// - Byte read in lower 8 bits
+// - EOF in upper 8 bits (1 = EOF)
 //
-UINT8	mos_FGETC(UINT8 fh) {
+UINT24	mos_FGETC(UINT8 fh) {
 	FRESULT fr;
 	FIL	*	fo;
 	UINT	br;
@@ -1044,7 +1046,7 @@ UINT8	mos_FGETC(UINT8 fh) {
 	if(fo > 0) {
 		fr = f_read(fo, &c, 1, &br); 
 		if(fr == FR_OK) {
-			return	c;
+			return	c | (fat_EOF(fo) << 8);
 		}		
 	}
 	return 0;

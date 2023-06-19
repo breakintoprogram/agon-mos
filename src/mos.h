@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	15/04/2023
+ * Last Updated:	30/05/2023
  * 
  * Modinfo:
  * 11/07/2022:		Removed mos_cmdBYE, Added mos_cmdLOAD
@@ -26,7 +26,8 @@
  * 21/03/2023:		Added mos_SETINTVECTOR
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK
- * 24/05/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT
+ * 30/05/2023:		Function mos_FGETC now returns EOF flag
+ * 19/06/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT
  */
 
 #ifndef MOS_H
@@ -93,7 +94,7 @@ UINT24 	mos_BOOT(char * filename, char * buffer, UINT24 size);
 
 UINT24	mos_FOPEN(char * filename, UINT8 mode);
 UINT24	mos_FCLOSE(UINT8 fh);
-UINT8	mos_FGETC(UINT8 fh);
+UINT24	mos_FGETC(UINT8 fh);
 void	mos_FPUTC(UINT8 fh, char c);
 UINT24	mos_FREAD(UINT8 fh, UINT24 buffer, UINT24 btr);
 UINT24	mos_FWRITE(UINT8 fh, UINT24 buffer, UINT24 btw);
