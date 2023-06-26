@@ -66,6 +66,7 @@ mos_getfil:		EQU	19h
 mos_fread:		EQU	1Ah
 mos_fwrite:		EQU	1Bh
 mos_flseek:		EQU	1Ch
+mos_setkbvector:	EQU	1Dh
 
 ; FatFS file access functions
 ;
