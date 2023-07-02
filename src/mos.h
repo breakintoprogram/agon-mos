@@ -112,47 +112,47 @@ UINT24	mos_GETFIL(UINT8 fh);
 
 UINT8	fat_EOF(FIL * fp);
 
-#define HELP_CAT	"*CAT <path> (Aliases: DIR andd .)\r\n"		\
+#define HELP_CAT	"CAT <path> (Aliases: DIR andd .)\r\n"		\
 			"Directory listing of the current directory.\r\n"
 
-#define HELP_CD		"*CD <path>\r\n"				\
+#define HELP_CD		"CD <path>\r\n"				\
 			"Change current directory\r\n"
 
-#define HELP_COPY	"*COPY <filename1> <filename2>\r\n"		\
+#define HELP_COPY	"COPY <filename1> <filename2>\r\n"		\
 			"Create a copy of a file.\r\n"
 
-#define HELP_CREDITS	"*CREDITS\r\n"					\
+#define HELP_CREDITS	"CREDITS\r\n"					\
 			"Output credits and version numbers for\r\n"	\
 			"third-party libraries used in the Agon firmware\r\n"
 
-#define HELP_DELETE	"*DELETE <filename> (Aliases: ERASE)\r\n"	\
+#define HELP_DELETE	"DELETE <filename> (Aliases: ERASE)\r\n"	\
 			"Delete a file or folder (must be empty).\r\n"
 
-#define HELP_JMP	"*JMP <addr>\r\n"				\
+#define HELP_JMP	"JMP <addr>\r\n"				\
 			"Jump to the specified address in memory\r\n"
 
-#define HELP_LOAD	"*LOAD <filename> <addr>\r\n"			\
+#define HELP_LOAD	"LOAD <filename> <addr>\r\n"			\
 			"Load a file from the SD card to the specified"	\
 			"address.\r\n"					\
 			"If no parameters are passed, then `addr' will"	\
 			"default to &40000.\r\n"
 
-#define HELP_MKDIR	"*MKDIR <filename>\r\n"				\
+#define HELP_MKDIR	"MKDIR <filename>\r\n"				\
 			"Create a new folder on the SD card.\r\n"
 
-#define HELP_RENAME	"*RENAME <filename1> <filename2> "		\
+#define HELP_RENAME	"RENAME <filename1> <filename2> "		\
 			"(Aliases: MOVE)\r\n"				\
 			"Rename a file in the same folder.\r\n"
 
-#define HELP_RUN	"*RUN <addr>\r\n"				\
+#define HELP_RUN	"RUN <addr>\r\n"				\
 			"Call an executable binary loaded in memory.\r\n"\
 			"If no parameters are passed, then addr will "	\
 			"default to &40000.\r\n"
 
-#define HELP_SAVE	"*SAVE <filename> <addr> <size>\r\n"		\
+#define HELP_SAVE	"SAVE <filename> <addr> <size>\r\n"		\
 			"Save a block of memory to the SD card\r\n"
 
-#define HELP_SET	"*SET <option> <value>\r\n"			\
+#define HELP_SET	"SET <option> <value>\r\n"			\
 			"Set a system option\r\n\r\n"			\
 			"Keyboard Layout\r\n"				\
 			"SET KEYBOARD n: Set the keyboard layout\r\n"	\
@@ -166,22 +166,22 @@ UINT8	fat_EOF(FIL * fp);
 			"    7: Norwegian\r\n"				\
 			"    8: Japanese\r\n"
 
-#define HELP_TIME	"*TIME [ <yyyy> <mm> <dd> <hh> <mm> <ss> ]\r\n"	\
+#define HELP_TIME	"TIME [ <yyyy> <mm> <dd> <hh> <mm> <ss> ]\r\n"	\
 			"Set and read the ESP32 real-time clock\r\n"
 
-#define HELP_VDU	"*VDU <char1> <char2> ... <charN>\r\n"		\
+#define HELP_VDU	"VDU <char1> <char2> ... <charN>\r\n"		\
 			"Write a stream of characters to the VDP\r\n"
 
-#define HELP_TYPE	"*TYPE <filename>\r\n"				\
+#define HELP_TYPE	"TYPE <filename>\r\n"				\
 			"Display the contents of a file on the screen\r\n"
 
-#define HELP_CLS	"*CLS\r\n"					\
+#define HELP_CLS	"CLS\r\n"					\
 			"Clear the screen\r\n"
 
-#define HELP_MOUNT	"*MOUNT\r\n"					\
+#define HELP_MOUNT	"MOUNT\r\n"					\
 			"(Re-)mount the MicroSD card\r\n"
 
-#define HELP_HELP	"*HELP [ <command> | all ]\r\n"			\
+#define HELP_HELP	"HELP [ <command> | all ]\r\n"			\
 			"Display help on a single or all commands.\r\n"	\
 			"List of commands:\r\n"				\
 			"CAT, CD, COPY, CREDITS, DELETE, JMP, \r\n"	\
