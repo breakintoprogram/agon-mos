@@ -23,7 +23,7 @@
  * 23/03/2023:				RC2	+ Increased baud rate to 1152000
  * 								+ Improved ESP32->eZ80 boot sync
  * 29/03/2023:				RC3 + Added UART1 initialisation, tweaked startup sequence timings
- * 16/05/2023:		Version 1.04: Fixed MASTERCLOCK value in uart.h
+ * 16/05/2023:		Version 1.04: Fixed MASTERCLOCK value in uart.h, added startup beep
  */
 
 #include <eZ80.h>
@@ -128,6 +128,8 @@ int main(void) {
 	#endif
 
 	(void)mos_mount();							// Mount the SD card
+	
+	putch(7);										// Startup beep
 
 	// Load the autoexec.bat config file
 	//
