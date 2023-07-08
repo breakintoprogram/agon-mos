@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	19/05/2023
+; Last Updated:	05/06/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -21,6 +21,7 @@
 ; 13/04/2023:	Added FatFS file structures (FFOBJID, FIL, DIR, FILINFO)
 ; 15/04/2023:	Added mos_getfil, mos_fread, mos_fwrite and mos_flseek
 ; 19/05/2023:	Added sysvar_scrMode
+; 05/06/2023:	Added sysvar_rtcEnable
 
 ; VDP control (VDU 23, 0, n)
 ;
@@ -155,7 +156,7 @@ sysvar_keydelay:	EQU	22h	; 2: Keyboard repeat delay
 sysvar_keyrate:		EQU	24h	; 2: Keyboard repeat reat
 sysvar_keyled:		EQU	26h	; 1: Keyboard LED status
 sysvar_scrMode:		EQU	27h	; 1: Screen mode
-sysvar_rtcEnable:	EQU	28h ; 1: Rtc enable flag
+sysvar_rtcEnable:	EQU	28h	; 1: RTC enable flag (0: disabled, 1: use ESP32 RTC)
 	
 ; Flags for the VPD protocol
 ;

@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Globals
 ; Author:	Dean Belfield
 ; Created:	01/08/2022
-; Last Updated:	19/05/2023
+; Last Updated:	05/06/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added sysvars structure, cursorX, cursorY
@@ -90,7 +90,7 @@ _keydelay:		DS	2		; + 22h: Keyboard repeat delay
 _keyrate:		DS	2		; + 24h: Keyboard repeat rate
 _keyled:		DS	1		; + 26h: Keyboard LED status
 _scrmode:		DS	1		; + 27h: Screen mode
-_rtc_enable:	DS	1		; + 28h: RTC enable status
+_rtc_enable:		DS	1		; + 28h: RTC enable status
 
 _errno:			DS 	3		; extern int _errno
 _coldBoot:		DS	1		; extern char _coldBoot
