@@ -30,7 +30,7 @@
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
  * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
- * 08/07/2023		Added mos_trim function; mos_exec now trims whitespace from input string
+ * 08/07/2023		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
  */
 
 #include <eZ80.h>
@@ -776,7 +776,7 @@ UINT24	mos_DIR(char * path) {
 			hr = (fno.ftime & 0xF800) >> 11;	// Bits 15 to 11
 			mi = (fno.ftime & 0x07E0) >>  5;	// Bits 10 to  5
 			
-			printf("%04d/%02d/%02d\t%02d:%02d %c %*d %s\n\r", yr + 1980, mo, da, hr, mi, fno.fattrib & AM_DIR ? 'D' : ' ', 8, fno.fsize, fno.fname);
+			printf("%04d/%02d/%02d\t%02d:%02d %c %*lu %s\n\r", yr + 1980, mo, da, hr, mi, fno.fattrib & AM_DIR ? 'D' : ' ', 8, fno.fsize, fno.fname);
 		}
 	}
 	f_closedir(&dir);
