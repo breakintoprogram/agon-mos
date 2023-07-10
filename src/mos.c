@@ -924,7 +924,7 @@ UINT24 mos_FCLOSE(UINT8 fh) {
 	
 	if(fh > 0 && fh <= MOS_maxOpenFiles) {
 		i = fh - 1;
-		if(&mosFileObjects[i].free > 0) {
+		if(mosFileObjects[i].free > 0) {
 			fr = f_close(&mosFileObjects[i].fileObject);
 			mosFileObjects[i].free = 0;
 		}
