@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Globals
 ; Author:	Dean Belfield
 ; Created:	01/08/2022
-; Last Updated:	05/06/2023
+; Last Updated:	03/08/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added sysvars structure, cursorX, cursorY
@@ -18,6 +18,7 @@
 ; 14/04/2023:	Added scratchpad
 ; 19/05/2023	Added scrmode
 ; 05/06/2023:	Added RTC enable flag
+; 03/08/2023:	Added user_kbvector
 
 			INCLUDE	"../src/equs.inc"
 			
@@ -133,8 +134,7 @@ _vdp_protocol_data:	DS	VDPP_BUFFERLEN
 ;
 ; Userspace hooks
 ;
-_user_kbvector: DS 3   ; Pointer to function
-
+_user_kbvector: 	DS	3		; Pointer to keyboard function
 
 			SECTION DATA		; This section is copied to RAM in cstartup.asm
 

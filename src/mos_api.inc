@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API for user projects
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	05/06/2023
+; Last Updated:	03/08/2023
 ;
 ; Modinfo:
 ; 05/08/2022:	Added mos_feof
@@ -22,6 +22,7 @@
 ; 15/04/2023:	Added mos_getfil, mos_fread, mos_fwrite and mos_flseek
 ; 19/05/2023:	Added sysvar_scrMode
 ; 05/06/2023:	Added sysvar_rtcEnable
+; 03/08/2023:	Added mos_setkbvector
 
 ; VDP control (VDU 23, 0, n)
 ;

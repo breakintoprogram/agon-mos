@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	30/05/2023
+; Last Updated:	03/08/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -21,6 +21,7 @@
 ; 14/04/2023:	Added ffs_api_fopen, ffs_api_fclose, ffs_api_stat, ffs_api_fread, ffs_api_fwrite, ffs_api_feof, ffs_api_flseek
 ; 15/04/2023:	Added mos_api_getfil, mos_api_fread, mos_api_fwrite and mos_api_flseek
 ; 30/05/2023:	Fixed mos_api_fgetc to set carry if at end of file
+; 03/08/2023:	Added mos_api_setkbvector
 
 			.ASSUME	ADL = 1
 			
@@ -625,22 +626,21 @@ mos_api_setintvector:	LD	A, E
 			RET 
 			
 ; Set a VDP keyboard packet receiver callback
-; C: If non-zero then set the top byte of HLU(callback address)  to MB (for ADL=0 callers)
+;   C: If non-zero then set the top byte of HLU(callback address)  to MB (for ADL=0 callers)
 ; HLU: Pointer to callback
-mos_api_setkbvector:
-		PUSH DE
-		XOR A
-		OR C				; If C!=0 set top byte (bits 16:23) to MB
-		JR Z, $F
-		LD	A, MB
-		CALL	SET_AHL24
-$$:	PUSH HL
-		POP DE
-		LD HL, _user_kbvector
-		LD (HL),DE
-		
-		POP DE
-		RET
+;
+mos_api_setkbvector:	PUSH	DE
+			XOR	A
+			OR	C		; If C!=0 set top byte (bits 16:23) to MB
+			JR	Z, $F
+			LD	A, MB
+			CALL	SET_AHL24
+$$:			PUSH	HL
+			POP	DE
+			LD	HL, _user_kbvector
+			LD	(HL),DE		
+			POP	DE
+			RET
 
 ; Open UART1
 ; IXU: Pointer to UART struct

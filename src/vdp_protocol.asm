@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	19/05/2023
+; Last Updated:	03/08/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
@@ -16,6 +16,7 @@
 ; 21/03/2023:	Added vdp_protocol_KEYSTATE
 ; 26/03/2023:	Added vdp_protocol_GP, checks DEL above cursor block for CTRL+ALT+DEL	
 ; 19/05/2023:	Extended vdp_protocol_MODE to store scrmode
+; 03/08/2023:	Added user_kbvector in vdp_protocol_KEY
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -146,57 +147,56 @@ vdp_protocol_vesize:	EQU	($-vdp_protocol_vector)/4
 	
 ; General Poll
 ;
-vdp_protocol_GP:	LD		A, (_vdp_protocol_data + 0)
-			LD		(_gp), A
+vdp_protocol_GP:	LD	A, (_vdp_protocol_data + 0)
+			LD	(_gp), A
 			RET
 
 ; Keyboard Data
 ; Received after a keypress event in the VPD
 ;
-vdp_protocol_KEY:
-			LD		HL, (_user_kbvector)				; If a user kbvector is set, call it
-			LD		DE, 0
-			OR		A
-			SBC		HL,DE
-			JR		Z, $F
-			LD		HL, $F
-			PUSH	HL										; Push return address from user routine
-			LD		HL, (_user_kbvector)
-			LD		DE, _vdp_protocol_data			; Pass kb packet address to user routine in DE (24-bit)
-			JP		(HL)
-$$:
-			LD		A, (_vdp_protocol_data + 0)	; ASCII key code
-			LD		(_keyascii), A
-			LD		A, (_vdp_protocol_data + 1)	; Key modifiers (SHIFT, ALT, etc)
-			LD		(_keymods), A
-			LD		A, (_vdp_protocol_data + 3)	; Key down? (1=down, 0=up)
-			LD		(_keydown), A
-			LD		A, (_keycount)			; Increment the key event counter
-			INC		A
-			LD		(_keycount), A
-			LD		A, (_vdp_protocol_data + 2)	
-			LD		(_keycode), A
+vdp_protocol_KEY:	LD	HL, (_user_kbvector)		; If a user kbvector is set, call it
+			LD	DE, 0
+			OR	A
+			SBC	HL,DE
+			JR	Z, $F
+			LD	HL, $F
+			PUSH	HL				; Push return address from user routine
+			LD	HL, (_user_kbvector)
+			LD	DE, _vdp_protocol_data		; Pass keyboard packet address to user routine in DE (24-bit)
+			JP	(HL)
+;
+$$:			LD	A, (_vdp_protocol_data + 0)	; ASCII key code
+			LD	(_keyascii), A
+			LD	A, (_vdp_protocol_data + 1)	; Key modifiers (SHIFT, ALT, etc)
+			LD	(_keymods), A
+			LD	A, (_vdp_protocol_data + 3)	; Key down? (1=down, 0=up)
+			LD	(_keydown), A
+			LD	A, (_keycount)			; Increment the key event counter
+			INC	A
+			LD	(_keycount), A
+			LD	A, (_vdp_protocol_data + 2)	
+			LD	(_keycode), A
 ;
 ; Now check for CTRL+ALT+DEL
 ;
-			CP		130				; Check for DEL (cursor keys)
-			JR		Z, $F
-			CP		131				; Check for DEL (no numlock)
-			JR		Z, $F
-			CP		88				; And DEL (numlock)
-			RET		NZ
-$$:			LD		A, (_keymods)			; DEL is pressed, so check CTRL + ALT
-			AND		05h				; Bit 0 and 2
-			CP		05h
-			RET		NZ				; Exit if not pressed
+			CP	130				; Check for DEL (cursor keys)
+			JR	Z, $F
+			CP	131				; Check for DEL (no numlock)
+			JR	Z, $F
+			CP	88				; And DEL (numlock)
+			RET	NZ
+$$:			LD	A, (_keymods)			; DEL is pressed, so check CTRL + ALT
+			AND	05h				; Bit 0 and 2
+			CP	05h
+			RET	NZ				; Exit if not pressed
 ;
 ; Here we're just waiting for the key to go up
 ;
-			LD		A, (_keydown)			; Get key down
-			DEC		A				; Check for 0
-			JP		NZ, 0				
-			LD		(_keyascii), A			; Otherwise clear the keycode so no interaction with console 
-			LD		(_keycode), A 
+			LD	A, (_keydown)			; Get key down
+			DEC	A				; Check for 0
+			JP	NZ, 0				
+			LD	(_keyascii), A			; Otherwise clear the keycode so no interaction with console 
+			LD	(_keycode), A 
 			RET
 
 ; Cursor data
@@ -207,13 +207,13 @@ $$:			LD		A, (_keymods)			; DEL is pressed, so check CTRL + ALT
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
-vdp_protocol_CURSOR:	LD		A, (_vdp_protocol_data+0)
-			LD		(_cursorX), A
-			LD		A, (_vdp_protocol_data+1)
-			LD		(_cursorY), A
-			LD		A, (_vpd_protocol_flags)
-			OR		VDPP_FLAG_CURSOR
-			LD		(_vpd_protocol_flags), A
+vdp_protocol_CURSOR:	LD	A, (_vdp_protocol_data+0)
+			LD	(_cursorX), A
+			LD	A, (_vdp_protocol_data+1)
+			LD	(_cursorY), A
+			LD	A, (_vpd_protocol_flags)
+			OR	VDPP_FLAG_CURSOR
+			LD	(_vpd_protocol_flags), A
 			RET
 			
 ; Screen character data
@@ -223,11 +223,11 @@ vdp_protocol_CURSOR:	LD		A, (_vdp_protocol_data+0)
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
-vpd_protocol_SCRCHAR:	LD		A, (_vdp_protocol_data+0)
-			LD		(_scrchar), A
-			LD		A, (_vpd_protocol_flags)
-			OR		VDPP_FLAG_SCRCHAR
-			LD		(_vpd_protocol_flags), A
+vpd_protocol_SCRCHAR:	LD	A, (_vdp_protocol_data+0)
+			LD	(_scrchar), A
+			LD	A, (_vpd_protocol_flags)
+			OR	VDPP_FLAG_SCRCHAR
+			LD	(_vpd_protocol_flags), A
 			RET
 			
 ; Pixel value data (RGB)
@@ -240,13 +240,13 @@ vpd_protocol_SCRCHAR:	LD		A, (_vdp_protocol_data+0)
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
-vdp_protocol_POINT:	LD		HL, (_vdp_protocol_data+0)
-			LD		(_scrpixel), HL
-			LD		A, (_vdp_protocol_data+3)
-			LD		(_scrpixelIndex), A
-			LD		A, (_vpd_protocol_flags)
-			OR		VDPP_FLAG_POINT
-			LD		(_vpd_protocol_flags), A
+vdp_protocol_POINT:	LD	HL, (_vdp_protocol_data+0)
+			LD	(_scrpixel), HL
+			LD	A, (_vdp_protocol_data+3)
+			LD	(_scrpixelIndex), A
+			LD	A, (_vpd_protocol_flags)
+			OR	VDPP_FLAG_POINT
+			LD	(_vpd_protocol_flags), A
 			RET
 			
 ; Audio acknowledgement
@@ -257,13 +257,13 @@ vdp_protocol_POINT:	LD		HL, (_vdp_protocol_data+0)
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
-vdp_protocol_AUDIO:	LD		A, (_vdp_protocol_data+0)
-			LD		(_audioChannel), A
-			LD		A, (_vdp_protocol_data+1)
-			LD		(_audioSuccess), A
-			LD		A, (_vpd_protocol_flags)
-			OR		VDPP_FLAG_AUDIO
-			LD		(_vpd_protocol_flags), A
+vdp_protocol_AUDIO:	LD	A, (_vdp_protocol_data+0)
+			LD	(_audioChannel), A
+			LD	A, (_vdp_protocol_data+1)
+			LD	(_audioSuccess), A
+			LD	A, (_vpd_protocol_flags)
+			OR	VDPP_FLAG_AUDIO
+			LD	(_vpd_protocol_flags), A
 			RET
 			
 ; Screen mode details
@@ -278,25 +278,25 @@ vdp_protocol_AUDIO:	LD		A, (_vdp_protocol_data+0)
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
-vdp_protocol_MODE:	LD		A, (_vdp_protocol_data+0)
-			LD		(_scrwidth), A
-			LD		A, (_vdp_protocol_data+1)
-			LD		(_scrwidth+1), A
-			LD		A, (_vdp_protocol_data+2)
-			LD		(_scrheight), A
-			LD		A, (_vdp_protocol_data+3)
-			LD		(_scrheight+1), A
-			LD		A, (_vdp_protocol_data+4)
-			LD		(_scrcols), A
-			LD		A, (_vdp_protocol_data+5)
-			LD		(_scrrows), A
-			LD		A, (_vdp_protocol_data+6)
-			LD		(_scrcolours), A
-			LD		A, (_vdp_protocol_data+7)
-			LD		(_scrmode), A
-			LD		A, (_vpd_protocol_flags)
-			OR		VDPP_FLAG_MODE
-			LD		(_vpd_protocol_flags), A			
+vdp_protocol_MODE:	LD	A, (_vdp_protocol_data+0)
+			LD	(_scrwidth), A
+			LD	A, (_vdp_protocol_data+1)
+			LD	(_scrwidth+1), A
+			LD	A, (_vdp_protocol_data+2)
+			LD	(_scrheight), A
+			LD	A, (_vdp_protocol_data+3)
+			LD	(_scrheight+1), A
+			LD	A, (_vdp_protocol_data+4)
+			LD	(_scrcols), A
+			LD	A, (_vdp_protocol_data+5)
+			LD	(_scrrows), A
+			LD	A, (_vdp_protocol_data+6)
+			LD	(_scrcolours), A
+			LD	A, (_vdp_protocol_data+7)
+			LD	(_scrmode), A
+			LD	A, (_vpd_protocol_flags)
+			OR	VDPP_FLAG_MODE
+			LD	(_vpd_protocol_flags), A			
 			RET
 
 ; RTC
@@ -313,13 +313,13 @@ vdp_protocol_MODE:	LD		A, (_vdp_protocol_data+0)
 ;
 ; Sets vpd_protocol_flags to flag receipt to apps
 ;
-vdp_protocol_RTC:	LD		HL, _vdp_protocol_data
-			LD		DE, _rtc 
-			LD		BC,  8
+vdp_protocol_RTC:	LD	HL, _vdp_protocol_data
+			LD	DE, _rtc 
+			LD	BC,  8
 			LDIR 
-			LD		A, (_vpd_protocol_flags)
-			OR		VDPP_FLAG_RTC
-			LD		(_vpd_protocol_flags), A			
+			LD	A, (_vpd_protocol_flags)
+			OR	VDPP_FLAG_RTC
+			LD	(_vpd_protocol_flags), A			
 			RET
 
 ; Keyboard status
@@ -329,8 +329,8 @@ vdp_protocol_RTC:	LD		HL, _vdp_protocol_data
 ; Word: rate
 ; Byte: led status
 ;
-vdp_protocol_KEYSTATE:	LD		HL, _vdp_protocol_data
-			LD		DE, _keydelay
-			LD		BC, 5
+vdp_protocol_KEYSTATE:	LD	HL, _vdp_protocol_data
+			LD	DE, _keydelay
+			LD	BC, 5
 			LDIR 
 			RET 
