@@ -2,7 +2,7 @@
  * Title:			AGON MOS - Timer
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	08/04/2023
+ * Last Updated:	03/08/2023
  * 
  * Modinfo:
  * 11/07/2022:		Removed unused functions
@@ -10,6 +10,7 @@
  * 13/03/2023:		Refactored
  * 31/03/2023:		Added wait_VDP
  * 08/04/2023:		Fixed timing loop in wait_VDP
+ * 03/08/2023:		Fixed timer0 setup overflow in init_timer0
  */
 
 #include <eZ80.h>
