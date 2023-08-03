@@ -72,6 +72,7 @@
 			XREF	_sysvars
 			XREF	_scratchpad
 			XREF	_vpd_protocol_flags
+			XREF	_user_kbvector
 
 			XREF	_f_open			; In ff.c
 			XREF	_f_close
@@ -117,6 +118,7 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_fread		; 0x1A
 			DW	mos_api_fwrite		; 0x1B
 			DW	mos_api_flseek		; 0x1C
+			DW	mos_api_setkbvector	; 0x1D
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -621,6 +623,24 @@ mos_api_setintvector:	LD	A, E
 			POP	DE 
 			POP	DE
 			RET 
+			
+; Set a VDP keyboard packet receiver callback
+; C: If non-zero then set the top byte of HLU(callback address)  to MB (for ADL=0 callers)
+; HLU: Pointer to callback
+mos_api_setkbvector:
+		PUSH DE
+		XOR A
+		OR C				; If C!=0 set top byte (bits 16:23) to MB
+		JR Z, $F
+		LD	A, MB
+		CALL	SET_AHL24
+$$:	PUSH HL
+		POP DE
+		LD HL, _user_kbvector
+		LD (HL),DE
+		
+		POP DE
+		RET
 
 ; Open UART1
 ; IXU: Pointer to UART struct

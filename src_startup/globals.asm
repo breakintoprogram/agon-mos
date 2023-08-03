@@ -62,6 +62,8 @@
 			XDEF	_vdp_protocol_ptr
 			XDEF	_vdp_protocol_data
 
+			XDEF	_user_kbvector
+
 			SEGMENT BSS		; This section is reset to 0 in cstartup.asm
 			
 _sysvars:					; Please make sure the sysvar offsets match those in mos_api.inc
@@ -127,7 +129,13 @@ _vdp_protocol_cmd:	DS	1		; Command
 _vdp_protocol_len:	DS	1		; Size of packet data
 _vdp_protocol_ptr:	DS	3		; Pointer into data
 _vdp_protocol_data:	DS	VDPP_BUFFERLEN
-		
+
+;
+; Userspace hooks
+;
+_user_kbvector: DS 3   ; Pointer to function
+
+
 			SECTION DATA		; This section is copied to RAM in cstartup.asm
 
 			END

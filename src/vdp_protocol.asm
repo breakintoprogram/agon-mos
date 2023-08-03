@@ -56,6 +56,8 @@
 			XREF	_vdp_protocol_len
 			XREF	_vdp_protocol_ptr
 			XREF	_vdp_protocol_data
+			
+			XREF	_user_kbvector
 
 			XREF	serial_TX
 			XREF	serial_RX
@@ -151,7 +153,19 @@ vdp_protocol_GP:	LD		A, (_vdp_protocol_data + 0)
 ; Keyboard Data
 ; Received after a keypress event in the VPD
 ;
-vdp_protocol_KEY:	LD		A, (_vdp_protocol_data + 0)	; ASCII key code
+vdp_protocol_KEY:
+			LD		HL, (_user_kbvector)				; If a user kbvector is set, call it
+			LD		DE, 0
+			OR		A
+			SBC		HL,DE
+			JR		Z, $F
+			LD		HL, $F
+			PUSH	HL										; Push return address from user routine
+			LD		HL, (_user_kbvector)
+			LD		DE, _vdp_protocol_data			; Pass kb packet address to user routine in DE (24-bit)
+			JP		(HL)
+$$:
+			LD		A, (_vdp_protocol_data + 0)	; ASCII key code
 			LD		(_keyascii), A
 			LD		A, (_vdp_protocol_data + 1)	; Key modifiers (SHIFT, ALT, etc)
 			LD		(_keymods), A
