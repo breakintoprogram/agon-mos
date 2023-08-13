@@ -47,6 +47,8 @@ You can download the ZDS II tools for free via these links. The software contain
 - [Zilog ZDS II Tools version 5.3.4](https://zilog.com/index.php?option=com_zcm&task=view&soft_id=38&Itemid=74)
 - [Zilog ZDS II Tools version 5.3.5](https://zilog.com/index.php?option=com_zcm&task=view&soft_id=54&Itemid=74)
 
+You will also need a [Hex2Bin utility](https://sourceforge.net/projects/hex2bin/) to convert the MOS.hex file to MOS.bin ready for release.
+
 NB:
 
 - The tools are only available for Windows PC.
@@ -54,6 +56,8 @@ NB:
 - The Ethernet Smart Cable may be compatible with the tools running on Wine, though this combination has not been tested by me
 
 I currently build the official Quark software on a Windows XP KVM running on Ubuntu 20.04 LTS, using ZDS II Tools version 5.3.4, connecting to the Agon with the discontinued USB smart cable.
+
+It is recommended that building and testing the MOS is done via the ZDS II tools and a Zilog Smart Cable, otherwise there is an increased risk of bricking the Agon.
 
 Other options for developing C and eZ80 on the Agon are available. Please check the [Agon Programmers Group on Facebook](https://www.facebook.com/groups/667325088311886) for more information.
 
