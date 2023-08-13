@@ -9,6 +9,7 @@
 <file filter-key="">src\mos_editor.c</file>
 <file filter-key="">src\mos_api.asm</file>
 <file filter-key="">src\misc.asm</file>
+<file filter-key="">src\keyboard.asm</file>
 <file filter-key="">src\vdp_protocol.asm</file>
 <file filter-key="">src\interrupts.asm</file>
 <file filter-key="">src\clock.c</file>
