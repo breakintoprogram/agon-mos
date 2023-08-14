@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	03/08/2023
+; Last Updated:	10/08/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -22,6 +22,7 @@
 ; 15/04/2023:	Added mos_api_getfil, mos_api_fread, mos_api_fwrite and mos_api_flseek
 ; 30/05/2023:	Fixed mos_api_fgetc to set carry if at end of file
 ; 03/08/2023:	Added mos_api_setkbvector
+; 10/08/2023:	Added mos_api_getkbmap
 
 			.ASSUME	ADL = 1
 			
@@ -74,6 +75,7 @@
 			XREF	_scratchpad
 			XREF	_vpd_protocol_flags
 			XREF	_user_kbvector
+			XREF	_keymap
 
 			XREF	_f_open			; In ff.c
 			XREF	_f_close
@@ -120,6 +122,7 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_fwrite		; 0x1B
 			DW	mos_api_flseek		; 0x1C
 			DW	mos_api_setkbvector	; 0x1D
+			DW	mos_api_getkbmap	; 0x1E
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -641,6 +644,13 @@ $$:			PUSH	HL
 			LD	(HL),DE		
 			POP	DE
 			RET
+
+; Get the address of the keyboard map
+; Returns:
+; IXU: Base address of the keymap
+; 
+mos_api_getkbmap:	LD	IX, _keymap
+			RET 
 
 ; Open UART1
 ; IXU: Pointer to UART struct

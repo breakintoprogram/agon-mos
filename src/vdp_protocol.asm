@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - VDP serial protocol
 ; Author:	Dean Belfield
 ; Created:	03/08/2022
-; Last Updated:	03/08/2023
+; Last Updated:	13/08/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added vdp_protocol_CURSOR
@@ -17,6 +17,7 @@
 ; 26/03/2023:	Added vdp_protocol_GP, checks DEL above cursor block for CTRL+ALT+DEL	
 ; 19/05/2023:	Extended vdp_protocol_MODE to store scrmode
 ; 03/08/2023:	Added user_kbvector in vdp_protocol_KEY
+; 13/08/2023:	Moved keyboard handling to keyboard.asm
 
 			INCLUDE	"macros.inc"
 			INCLUDE	"equs.inc"
@@ -57,12 +58,11 @@
 			XREF	_vdp_protocol_len
 			XREF	_vdp_protocol_ptr
 			XREF	_vdp_protocol_data
-			
+
 			XREF	_user_kbvector
 
-			XREF	serial_TX
-			XREF	serial_RX
-							
+			XREF	keyboard_handler	; In keyboard.asm
+;							
 ; The UART protocol handler state machine
 ;
 vdp_protocol:		LD	A, (_vdp_protocol_state)
@@ -157,7 +157,7 @@ vdp_protocol_GP:	LD	A, (_vdp_protocol_data + 0)
 vdp_protocol_KEY:	LD	HL, (_user_kbvector)		; If a user kbvector is set, call it
 			LD	DE, 0
 			OR	A
-			SBC	HL,DE
+			SBC	HL, DE
 			JR	Z, $F
 			LD	HL, $F
 			PUSH	HL				; Push return address from user routine
@@ -170,34 +170,16 @@ $$:			LD	A, (_vdp_protocol_data + 0)	; ASCII key code
 			LD	A, (_vdp_protocol_data + 1)	; Key modifiers (SHIFT, ALT, etc)
 			LD	(_keymods), A
 			LD	A, (_vdp_protocol_data + 3)	; Key down? (1=down, 0=up)
+			LD	C, A				; C: Keydown
 			LD	(_keydown), A
 			LD	A, (_keycount)			; Increment the key event counter
 			INC	A
 			LD	(_keycount), A
-			LD	A, (_vdp_protocol_data + 2)	
+			LD	A, (_vdp_protocol_data + 2)	; Virtual key code
+			LD	B, A 				; B: Virtual keycode
 			LD	(_keycode), A
 ;
-; Now check for CTRL+ALT+DEL
-;
-			CP	130				; Check for DEL (cursor keys)
-			JR	Z, $F
-			CP	131				; Check for DEL (no numlock)
-			JR	Z, $F
-			CP	88				; And DEL (numlock)
-			RET	NZ
-$$:			LD	A, (_keymods)			; DEL is pressed, so check CTRL + ALT
-			AND	05h				; Bit 0 and 2
-			CP	05h
-			RET	NZ				; Exit if not pressed
-;
-; Here we're just waiting for the key to go up
-;
-			LD	A, (_keydown)			; Get key down
-			DEC	A				; Check for 0
-			JP	NZ, 0				
-			LD	(_keyascii), A			; Otherwise clear the keycode so no interaction with console 
-			LD	(_keycode), A 
-			RET
+			JP	keyboard_handler		; Call the handle keyboard routine (in keyboard.asm)
 
 ; Cursor data
 ; Received after the cursor position is updated in the VPD
