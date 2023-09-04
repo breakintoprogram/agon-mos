@@ -78,7 +78,7 @@ int wait_ESP32(UART * pUART, UINT24 baudRate) {
 	open_UART0(pUART);					// Open the UART 
 	init_timer0(10, 16, 0x00);  		// 10ms timer for delay
 	gp = 0;								// Reset the general poll byte	
-	for(t = 0; t < 20; t++) {			// A timeout loop (20 x 50ms = 1s)
+	for(t = 0; t < 200; t++) {			// A timeout loop (200 x 50ms = 10s)
 		putch(23);						// Send a general poll packet
 		putch(0);
 		putch(VDP_gp);
