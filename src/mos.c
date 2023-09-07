@@ -203,7 +203,7 @@ char * mos_trim(char * s) {
     if(!*s) {
         return s;      			// Handle empty string
 	}
-	while(isspace(*s)) {		// Advance the pointer to the first non-whitespace character in the string
+	while(isspace(*s) || *s == '*') {		// Advance the pointer to the first non-whitespace or star character in the string
 		s++;
 	}
 	ptr = s + strlen(s) - 1;
