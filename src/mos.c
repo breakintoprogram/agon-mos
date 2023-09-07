@@ -69,28 +69,28 @@ t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 // Array of MOS commands and pointer to the C function to run
 //
 static t_mosCommand mosCommands[] = {
-	{ ".", 			&mos_cmdDIR,		HELP_CAT	},
-	{ "DIR",		&mos_cmdDIR,		HELP_CAT	},
-	{ "CAT",		&mos_cmdDIR,		HELP_CAT	},
-	{ "LOAD",		&mos_cmdLOAD,		HELP_LOAD	},
-	{ "SAVE", 		&mos_cmdSAVE,		HELP_SAVE	},
-	{ "DELETE",		&mos_cmdDEL,		HELP_DELETE	},
-	{ "ERASE",		&mos_cmdDEL,		HELP_DELETE	},
-	{ "JMP",		&mos_cmdJMP,		HELP_JMP	},
-	{ "RUN", 		&mos_cmdRUN,		HELP_RUN	},
-	{ "CD", 		&mos_cmdCD,		HELP_CD		},
-	{ "RENAME",		&mos_cmdREN,		HELP_RENAME	},
-	{ "MOVE",		&mos_cmdREN,		HELP_RENAME	},
-	{ "MKDIR", 		&mos_cmdMKDIR,		HELP_MKDIR	},
-	{ "COPY", 		&mos_cmdCOPY,		HELP_COPY	},
-	{ "SET",		&mos_cmdSET,		HELP_SET	},
-	{ "VDU",		&mos_cmdVDU,		HELP_VDU	},
-	{ "TIME", 		&mos_cmdTIME,		HELP_TIME	},
-	{ "CREDITS",		&mos_cmdCREDITS,	HELP_CREDITS	},
-	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE	},
-	{ "CLS",		&mos_cmdCLS,		HELP_CLS	},
-	{ "MOUNT",		&mos_cmdMOUNT,		HELP_MOUNT	},
-	{ "HELP",		&mos_cmdHELP,		HELP_HELP	},
+	{ ".", 			&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_DOT_ALIASES	},
+	{ "DIR",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_DIR_ALIASES	},
+	{ "CAT",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_CAT_ALIASES	},
+	{ "LOAD",		&mos_cmdLOAD,		HELP_LOAD_ARGS,		HELP_LOAD,	NULL	},
+	{ "SAVE", 		&mos_cmdSAVE,		HELP_SAVE_ARGS,		HELP_SAVE,	NULL	},
+	{ "DELETE",		&mos_cmdDEL,		HELP_DELETE_ARGS,	HELP_DELETE,	HELP_DELETE_ALIASES	},
+	{ "ERASE",		&mos_cmdDEL,		HELP_DELETE_ARGS,	HELP_DELETE,	HELP_ERASE_ALIASES	},
+	{ "JMP",		&mos_cmdJMP,		HELP_JMP_ARGS,		HELP_JMP,	NULL	},
+	{ "RUN", 		&mos_cmdRUN,		HELP_RUN_ARGS,		HELP_RUN,	NULL	},
+	{ "CD", 		&mos_cmdCD,		HELP_CD_ARGS,		HELP_CD,	NULL	},
+	{ "RENAME",		&mos_cmdREN,		HELP_RENAME_ARGS,	HELP_RENAME,	HELP_RENAME_ALIASES	},
+	{ "MOVE",		&mos_cmdREN,		HELP_RENAME_ARGS,	HELP_RENAME,	HELP_MOVE_ALIASES	},
+	{ "MKDIR", 		&mos_cmdMKDIR,		HELP_MKDIR_ARGS,	HELP_MKDIR,	NULL	},
+	{ "COPY", 		&mos_cmdCOPY,		HELP_COPY_ARGS,		HELP_COPY,	NULL	},
+	{ "SET",		&mos_cmdSET,		HELP_SET_ARGS,		HELP_SET,	NULL	},
+	{ "VDU",		&mos_cmdVDU,		HELP_VDU_ARGS,		HELP_VDU,	NULL	},
+	{ "TIME", 		&mos_cmdTIME,		HELP_TIME_ARGS,		HELP_TIME,	NULL	},
+	{ "CREDITS",		&mos_cmdCREDITS,	NULL,			HELP_CREDITS,	NULL	},
+	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE_ARGS,		HELP_TYPE,	NULL	},
+	{ "CLS",		&mos_cmdCLS,		NULL,			HELP_CLS,	NULL	},
+	{ "MOUNT",		&mos_cmdMOUNT,		NULL,			HELP_MOUNT,	NULL	},
+	{ "HELP",		&mos_cmdHELP,		HELP_HELP_ARGS,		HELP_HELP,	NULL	},
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -735,6 +735,16 @@ int	mos_cmdMOUNT(char *ptr) {
 	return 0;
 }
 
+void printCommandInfo(t_mosCommand * cmd) {
+	printf("%s", cmd->name);
+	if (cmd->args != NULL)
+		printf(" %s", cmd->args);
+	if (cmd->aliases != NULL)
+		printf(" (Aliases: %s)", cmd->aliases);
+	printf("\r\n");
+	printf("%s\r\n", cmd->help);
+}
+
 // HELP
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
@@ -752,11 +762,11 @@ int mos_cmdHELP(char *ptr) {
 		cmd = NULL;
 
 	for (i = 0; i < sizeof(mosCommands) / sizeof(mosCommands[0]); ++i) {
-		if (cmd == NULL)
-			printf("%s\r\n", mosCommands[i].help);
+		if (cmd == NULL) 
+			printCommandInfo(&mosCommands[i]);
 		else
 			if (strcasecmp(cmd, mosCommands[i].name) == 0) {
-				printf("%s", mosCommands[i].help);
+				printCommandInfo(&mosCommands[i]);
 				found = 1;
 			}
 	}
