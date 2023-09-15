@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	08/07/2023
+ * Last Updated:	15/09/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -30,7 +30,8 @@
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
  * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
- * 08/07/2023		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
+ * 08/07/2023:		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
+ * 15/09/2023:		Function mos_trim now includes the asterisk character as whitespace
  */
 
 #include <eZ80.h>
@@ -189,6 +190,7 @@ BOOL mos_cmp(const char *p1, const char *p2) {
 }
 
 // String trim function
+// NB: This also includes the asterisk character as whitespace
 // Parameters:
 // - s: Pointer to the string to trim
 // Returns:
@@ -197,13 +199,13 @@ BOOL mos_cmp(const char *p1, const char *p2) {
 char * mos_trim(char * s) {
     char * ptr;
 
-    if(!s) {					// Return NULL if a null string is passed
+    if(!s) {								// Return NULL if a null string is passed
         return NULL;
 	}
     if(!*s) {
-        return s;      			// Handle empty string
+        return s;      						// Handle empty string
 	}
-	while(isspace(*s) || *s == '*') {		// Advance the pointer to the first non-whitespace or star character in the string
+	while(isspace(*s) || *s == '*') {		// Advance the pointer to the first non-whitespace or asterisk character in the string
 		s++;
 	}
 	ptr = s + strlen(s) - 1;
