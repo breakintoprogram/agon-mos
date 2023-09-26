@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	15/09/2023
+ * Last Updated:	26/09/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -32,6 +32,7 @@
  * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
  * 08/07/2023:		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
  * 15/09/2023:		Function mos_trim now includes the asterisk character as whitespace
+ * 26/09/2023:		Refactored mos_GETRTC and mos_SETRTC
  */
 
 #include <eZ80.h>
@@ -1081,22 +1082,12 @@ UINT24 mos_OSCLI(char * cmd) {
 // - size of string
 //
 UINT8 mos_GETRTC(UINT24 address) {
-	BYTE	month, day, dayOfWeek, hour, minute, second;
-	char	year;
-
-	BYTE *	p = &rtc;
+	vdp_time_t t;
 
 	rtc_update();
+	rtc_unpack(&rtc, &t);
+	rtc_formatDateTime((char *)address, &t);
 
-	year		= *(p+0);
-	month		= *(p+1);
-	day   		= *(p+2);
-	dayOfWeek	= *(p+4);
-	hour		= *(p+5);
-	minute		= *(p+6);
-	second 		= *(p+7);
-
-	rtc_formatDateTime((char *)address, year, month, day, dayOfWeek, hour, minute, second);
 	return strlen((char *)address);
 }
 
@@ -1108,18 +1099,18 @@ UINT8 mos_GETRTC(UINT24 address) {
 //
 void mos_SETRTC(UINT24 address) {
 	BYTE * p = (BYTE *)address;
-	
+
 	putch(23);				// Set the ESP32 time
 	putch(0);
 	putch(VDP_rtc);
 	putch(1);				// 1: Set time (6 byte buffer mode)
 	//
-	putch(*(p+0));			// Year
-	putch(*(p+1));			// Month
-	putch(*(p+2));			// Day
-	putch(*(p+3));			// Hour
-	putch(*(p+4));			// Minute
-	putch(*(p+5));			// Second
+	putch(*p++);			// Year
+	putch(*p++);			// Month
+	putch(*p++);			// Day
+	putch(*p++);			// Hour
+	putch(*p++);			// Minute
+	putch(*p);				// Second
 }
 
 // Set an interrupt vector
