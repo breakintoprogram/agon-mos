@@ -90,7 +90,8 @@ _scrpixelIndex:		DS	1		; + 16h: Index of pixel data read from screen
 _keycode:		DS	1		; + 17h: Virtual key code from FabGL
 _keydown:		DS	1		; + 18h; Virtual key state from FabGL (0=up, 1=down)
 _keycount:		DS	1		; + 19h: Incremented every time a key packet is received
-_rtc:			DS	8		; + 1Ah: Real time clock data
+_rtc:			DS	6		; + 1Ah: Real time clock data
+			DS	2		; + 20h: Spare, previously used by rtc
 _keydelay:		DS	2		; + 22h: Keyboard repeat delay
 _keyrate:		DS	2		; + 24h: Keyboard repeat rate
 _keyled:		DS	1		; + 26h: Keyboard LED status

@@ -155,7 +155,8 @@ sysvar_scrpixelIndex:	EQU	16h	; 1: Index of pixel data read from screen
 sysvar_vkeycode:	EQU	17h	; 1: Virtual key code from FabGL
 sysvar_vkeydown		EQU	18h	; 1: Virtual key state from FabGL (0=up, 1=down)
 sysvar_vkeycount:	EQU	19h	; 1: Incremented every time a key packet is received
-sysvar_rtc:		EQU	1Ah	; 8: Real time clock data
+sysvar_rtc:		EQU	1Ah	; 6: Real time clock data
+sysvar_spare:		EQU	20h	; 2: Spare, previously used by rtc
 sysvar_keydelay:	EQU	22h	; 2: Keyboard repeat delay
 sysvar_keyrate:		EQU	24h	; 2: Keyboard repeat reat
 sysvar_keyled:		EQU	26h	; 1: Keyboard LED status
