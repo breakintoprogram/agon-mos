@@ -35,6 +35,8 @@
 
 #include "ff.h"
 
+extern char  	cmd[256];				// Array for the command line handler
+
 typedef struct {
 	char * name;
 	int (*func)(char * ptr);
@@ -75,6 +77,7 @@ int		mos_cmdSET(char *ptr);
 int		mos_cmdVDU(char *ptr);
 int		mos_cmdTIME(char *ptr);
 int		mos_cmdCREDITS(char *ptr);
+int		mos_cmdEXEC(char * ptr);
 
 UINT24	mos_LOAD(char * filename, UINT24 address, UINT24 size);
 UINT24	mos_SAVE(char * filename, UINT24 address, UINT24 size);
@@ -85,6 +88,7 @@ UINT24 	mos_REN(char * filename1, char * filename2);
 UINT24	mos_COPY(char * filename1, char * filename2);
 UINT24	mos_MKDIR(char * filename);
 UINT24 	mos_BOOT(char * filename, char * buffer, UINT24 size);
+UINT24 	mos_EXEC(char * filename, char * buffer, UINT24 size);
 
 UINT24	mos_FOPEN(char * filename, UINT8 mode);
 UINT24	mos_FCLOSE(UINT8 fh);

@@ -57,7 +57,6 @@ extern volatile	char 	keycode;		// Keycode
 extern volatile char	gp;				// General poll variable
 
 static FATFS 	fs;						// Handle for the file system
-static char  	cmd[256];				// Array for the command line handler
 
 // Wait for the ESP32 to respond with a GP packet to signify it is ready
 // Parameters:
