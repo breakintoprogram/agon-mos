@@ -429,13 +429,14 @@ int mos_cmdEXEC(char *ptr) {
 	FRESULT	fr;
 	char *  filename;
 	UINT24 	addr;
+	char    buf[256];
 	
 	if(
 		!mos_parseString(NULL, &filename)
 	) {
 		return 19; // Bad Parameter
 	}
-	fr = mos_EXEC(filename, cmd, sizeof cmd);
+	fr = mos_EXEC(filename, buf, sizeof buf);
 	return fr;
 }
 
@@ -890,36 +891,9 @@ UINT24 mos_MKDIR(char * filename) {
 	return fr;
 }
 
-// Load and run the config file 
-// Parameters:
-// - filename: The config file to execute
-// - buffer: Storage for each line to be loaded into and executed from (recommend 256 bytes)
-// - size: Size of buffer (in bytes)
-// Returns:
-// - FatFS return code
-//
-UINT24 mos_BOOT(char * filename, char * buffer, UINT24 size) {
-	FRESULT	fr;
-	FIL	   	fil;
-	UINT   	br;	
-	void * 	dest;
-	FSIZE_t fSize;
-	
-	fr = f_open(&fil, filename, FA_READ);
-	if(fr == FR_OK) {
-		while(!f_eof(&fil)) {
-			f_gets(buffer, size, &fil);
-			mos_exec(buffer);
-		}
-	}
-	f_close(&fil);	
-	return fr;	
-}
-
 // Load and run a batch file of MOS commands.
-// It is similar to mos_BOOT, but stops if a command returns an error
 // Parameters:
-// - filename: The config file to execute
+// - filename: The batch file to execute
 // - buffer: Storage for each line to be loaded into and executed from (recommend 256 bytes)
 // - size: Size of buffer (in bytes)
 // Returns:
@@ -931,13 +905,16 @@ UINT24 mos_EXEC(char * filename, char * buffer, UINT24 size) {
 	UINT   	br;	
 	void * 	dest;
 	FSIZE_t fSize;
+	int     line =  0;
 	
 	fr = f_open(&fil, filename, FA_READ);
 	if(fr == FR_OK) {
 		while(!f_eof(&fil)) {
+			line++;
 			f_gets(buffer, size, &fil);
 			fr = mos_exec(buffer);
 			if (fr != FR_OK) {
+				printf("\r\nError executing %s at line %d\r\n", filename, line);
 				break;
 			}
 		}

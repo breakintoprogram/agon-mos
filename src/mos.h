@@ -87,7 +87,6 @@ UINT24	mos_DEL(char * filename);
 UINT24 	mos_REN(char * filename1, char * filename2);
 UINT24	mos_COPY(char * filename1, char * filename2);
 UINT24	mos_MKDIR(char * filename);
-UINT24 	mos_BOOT(char * filename, char * buffer, UINT24 size);
 UINT24 	mos_EXEC(char * filename, char * buffer, UINT24 size);
 
 UINT24	mos_FOPEN(char * filename, UINT8 mode);
