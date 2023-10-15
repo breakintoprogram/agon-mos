@@ -56,6 +56,9 @@ extern char 			coldBoot;		// 1 = cold boot, 0 = warm boot
 extern volatile	char 	keycode;		// Keycode 
 extern volatile char	gp;				// General poll variable
 
+extern volatile BYTE history_no;
+extern volatile BYTE history_size;
+
 static FATFS 	fs;						// Handle for the file system
 static char  	cmd[256];				// Array for the command line handler
 
@@ -133,6 +136,8 @@ int main(void) {
 	f_mount(&fs, "", 1);							// Mount the SD card
 	
 	putch(7);										// Startup beep
+	history_no = 0;
+	history_size = 0;
 
 	// Load the autoexec.bat config file
 	//

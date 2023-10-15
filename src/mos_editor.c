@@ -32,13 +32,16 @@ extern volatile BYTE keycode;					// In globals.asm
 extern volatile BYTE keydown;					// In globals.asm
 extern volatile BYTE keycount;					// In globals.asm
 
+extern volatile BYTE history_no;
+extern volatile BYTE history_size;
+
 extern BYTE cursorX;
 extern BYTE cursorY;
 extern BYTE scrcols;
 
 // Storage for the command history
 //
-static char	cmd_history[cmd_historyWidth + 1];
+static char	cmd_history[cmd_historyDepth][cmd_historyWidth + 1];
 
 // Get the current cursor position from the VPD
 //
@@ -224,7 +227,8 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 						switch(keya) {
 							case 0x0D:		// Enter
 								if(len > 0) {										// If there is data in the buffer
-									strncpy(cmd_history, buffer, cmd_historyWidth);	// Save in the history and fall through to next case
+									strncpy(cmd_history[history_size++], buffer, cmd_historyWidth);	// Save in the history and fall through to next case
+									history_no = history_size;
 								}
 							case 0x1B:	{	// Escape
 								keyr = keya;
@@ -242,23 +246,50 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 								}
 							} break;
 							case 0x0A: {	// Cursor Down
+								if (history_no < history_size) {
+									strncpy(buffer, cmd_history[++history_no], limit);			// Copy from the history to the buffer
+									printf("\r                                      \r*");
+									printf("%s", buffer);							// Output the buffer
+									insertPos = strlen(buffer);						// Set cursor to end of string
+									len = strlen(buffer);
+									
+								} else {
+									strncpy(buffer, cmd_history[history_size], limit);			// Copy from the history to the buffer
+									printf("\r                                      \r*");
+									printf("%s", buffer);							// Output the buffer
+									insertPos = strlen(buffer);						// Set cursor to end of string
+									len = strlen(buffer);
+									
+								}
+
 								if(insertPos <= (len - scrcols)) {
 									putch(0x0A);
 									insertPos += scrcols;
 								}
 							} break;
 							case 0x0B:	{	// Cursor Up
-								if(len == 0) {										// If the buffer is empty
-									strncpy(buffer, cmd_history, limit);			// Copy from the history to the buffer
+								//if(len == 0) {		
+								// If the buffer is empty
+								if (history_no > 0) {
+									strncpy(buffer, cmd_history[--history_no], limit);			// Copy from the history to the buffer
+									printf("\r                                      \r*");
 									printf("%s", buffer);							// Output the buffer
 									insertPos = strlen(buffer);						// Set cursor to end of string
+									len = strlen(buffer);
+								} else {
+									strncpy(buffer, cmd_history[0], limit);			// Copy from the history to the buffer
+									printf("\r                                      \r*");
+									printf("%s", buffer);							// Output the buffer
+									insertPos = strlen(buffer);						// Set cursor to end of string
+									len = strlen(buffer);
 								}
-								else {
+								//}
+								//else {
 									if(insertPos >= scrcols) {
 										putch(0x0B);
 										insertPos -= scrcols;
 									}
-								}
+								//}
 							} break;
 							case 0x7F: {	// Backspace
 								if(deleteCharacter(buffer, insertPos, len)) {

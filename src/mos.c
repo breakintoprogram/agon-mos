@@ -61,6 +61,8 @@ extern BYTE 	rtc;							// In globals.asm
 
 static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
 
+extern volatile BYTE history_no;
+
 t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 
 // Array of MOS commands and pointer to the C function to run
