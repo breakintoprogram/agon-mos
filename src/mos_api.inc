@@ -153,7 +153,7 @@ sysvar_scrRows:		EQU	14h	; 1: Screen rows in characters
 sysvar_scrColours:	EQU	15h	; 1: Number of colours displayed
 sysvar_scrpixelIndex:	EQU	16h	; 1: Index of pixel data read from screen
 sysvar_vkeycode:	EQU	17h	; 1: Virtual key code from FabGL
-sysvar_vkeydown		EQU	18h	; 1: Virtual key state from FabGL (0=up, 1=down)
+sysvar_vkeydown:	EQU	18h	; 1: Virtual key state from FabGL (0=up, 1=down)
 sysvar_vkeycount:	EQU	19h	; 1: Incremented every time a key packet is received
 sysvar_rtc:		EQU	1Ah	; 6: Real time clock data
 sysvar_spare:		EQU	20h	; 2: Spare, previously used by rtc
@@ -162,6 +162,12 @@ sysvar_keyrate:		EQU	24h	; 2: Keyboard repeat reat
 sysvar_keyled:		EQU	26h	; 1: Keyboard LED status
 sysvar_scrMode:		EQU	27h	; 1: Screen mode
 sysvar_rtcEnable:	EQU	28h	; 1: RTC enable flag (0: disabled, 1: use ESP32 RTC)
+sysvar_mouseX:		EQU	29h	; 2: Mouse X position
+sysvar_mouseY:		EQU	2Bh	; 2: Mouse Y position
+sysvar_mouseButtons:	EQU	2Dh	; 1: Mouse button state
+sysvar_mouseWheel:	EQU	2Eh	; 1: Mouse wheel delta
+sysvar_mouseXDelta:	EQU	2Fh	; 2: Mouse X delta
+sysvar_mouseYDelta:	EQU	31h	; 2: Mouse Y delta
 	
 ; Flags for the VPD protocol
 ;
@@ -171,6 +177,8 @@ vdp_pflag_point:	EQU	00000100b
 vdp_pflag_audio:	EQU	00001000b
 vdp_pflag_mode:		EQU	00010000b
 vdp_pflag_rtc:		EQU	00100000b
+vdp_pflag_mouse:	EQU	01000000b
+; vdp_pflag_buffered:	EQU	10000000b
 
 ;
 ; FatFS structures
