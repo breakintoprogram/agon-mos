@@ -162,6 +162,40 @@ void waitKey() {
 	} while (keydown == 0);			// Loop until we get a key down value (keydown = 1)
 }
 
+// handle HOME
+//
+int gotoEditLineStart(int insertPos) {
+	while (insertPos > 0) {
+		doLeftCursor();
+		insertPos--;
+	}
+	return insertPos;
+}
+
+// handle END
+//
+int gotoEditLineEnd(int insertPos, int len) {
+	while (insertPos < len) {
+		doRightCursor();
+		insertPos++;
+	}
+	return insertPos;
+}
+
+// remove current edit line
+//
+void removeEditLine(char * buffer, int insertPos, int len) {
+	// goto start of line
+	insertPos = gotoEditLineStart(insertPos);
+	// set buffer to be spaces up to len
+	memset(buffer, ' ', len);
+	// print the buffer to erase old line from screen
+	printf("%s", buffer);
+	// clear the buffer
+	buffer[0] = 0;
+	gotoEditLineStart(len);
+}
+
 // The main line edit function
 // Parameters:
 // - buffer: Pointer to the line edit buffer
@@ -181,52 +215,52 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 	
 	getModeInformation();			// Get the current screen dimensions
 	
-	if(clear) {						// Clear the buffer as required
+	if (clear) {					// Clear the buffer as required
 		buffer[0] = 0;	
 		insertPos = 0;
-	}
-	else {
+	} else {
 		printf("%s", buffer);		// Otherwise output the current buffer
 		insertPos = strlen(buffer);	// And set the insertpos to the end
 	}
 
 	// Loop until an exit key is pressed
 	//
-	while(keyr == 0) {
+	while (keyr == 0) {
 		len = strlen(buffer);
 		waitKey();
 		keya = keyascii;
 		keyc = keycode;
-		switch(keyc) {
+		switch (keyc) {
 			//
 			// First any extended (non-ASCII keys)
 			//
 			case 0x85: {	// HOME
-				while(insertPos > 0) {
-					doLeftCursor();
-					insertPos--;
-				}
+				insertPos = gotoEditLineStart(insertPos);
 			} break;
 			case 0x87: {	// END
-				while(insertPos < len) {
-					doRightCursor();
-					insertPos++;
-				}
+				insertPos = gotoEditLineEnd(insertPos, len);
 			} break;
 			//
 			// Now the ASCII keys
 			//
 			default: {
-				if(keya > 0) {
-					if(keya >= 0x20 && keya != 0x7F) {
-						if(insertCharacter(buffer, keya, insertPos, len, limit)) {
+				if (keya > 0) {
+					if (keya >= 0x20 && keya != 0x7F) {
+						if (insertCharacter(buffer, keya, insertPos, len, limit)) {
 							insertPos++;
 						}
-					}
-					else {				
-						switch(keya) {
+					} else {				
+						switch (keya) {
 							case 0x0D:		// Enter
-								if(len > 0) {										// If there is data in the buffer
+								if (len > 0) {										// If there is data in the buffer
+									// If we're at the end of the history, then we need to shift all our entries up by one
+									if (history_size == (cmd_historyDepth - 1)) {
+										int i;
+										for(i = 0; i < history_size; i++) {
+											strncpy(cmd_history[i], cmd_history[i+1], cmd_historyWidth);
+										}
+										history_size--;
+									}
 									strncpy(cmd_history[history_size++], buffer, cmd_historyWidth);	// Save in the history and fall through to next case
 									history_no = history_size;
 								}
@@ -234,65 +268,66 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 								keyr = keya;
 							} break;
 							case 0x08:	{	// Cursor Left
-								if(insertPos > 0) {
+								if (insertPos > 0) {
 									doLeftCursor();
 									insertPos--;
 								}
 							} break;
 							case 0x15:	{	// Cursor Right
-								if(insertPos < len) {
+								if (insertPos < len) {
 									doRightCursor();
 									insertPos++;
 								}
 							} break;
 							case 0x0A: {	// Cursor Down
-								if (history_no < history_size) {
-									strncpy(buffer, cmd_history[++history_no], limit);			// Copy from the history to the buffer
-									printf("\r                                      \r*");
-									printf("%s", buffer);							// Output the buffer
-									insertPos = strlen(buffer);						// Set cursor to end of string
-									len = strlen(buffer);
-									
-								} else {
-									strncpy(buffer, cmd_history[history_size], limit);			// Copy from the history to the buffer
-									printf("\r                                      \r*");
-									printf("%s", buffer);							// Output the buffer
-									insertPos = strlen(buffer);						// Set cursor to end of string
-									len = strlen(buffer);
-									
-								}
-
-								if(insertPos <= (len - scrcols)) {
+								// if we've got a line longer than our screen width, and our insertion pos can go down a line, then move cursor
+								if (len > scrcols && (insertPos + scrcols) < len) {
 									putch(0x0A);
 									insertPos += scrcols;
+								} else if (insertPos < len) {
+									// otherwise if our insertion pos < len then move to end of line
+									insertPos = gotoEditLineEnd(insertPos, len);
+								} else {
+									// otherwise do history thing
+									if (history_no < history_size) {
+										// only replace line if we're not at the end of our history list
+										removeEditLine(buffer, insertPos, len);
+										strncpy(buffer, cmd_history[++history_no], limit);			// Copy from the history to the buffer
+										printf("%s", buffer);							// Output the buffer
+										insertPos = strlen(buffer);						// Set cursor to end of string
+										len = strlen(buffer);
+									}
 								}
 							} break;
 							case 0x0B:	{	// Cursor Up
-								//if(len == 0) {		
-								// If the buffer is empty
-								if (history_no > 0) {
-									strncpy(buffer, cmd_history[--history_no], limit);			// Copy from the history to the buffer
-									printf("\r                                      \r*");
-									printf("%s", buffer);							// Output the buffer
-									insertPos = strlen(buffer);						// Set cursor to end of string
-									len = strlen(buffer);
+								// if we've got a line longer than our screen width, and our insertion pos can go up a line, then move cursor
+								if (len > scrcols && (insertPos - scrcols) > 0) {
+									putch(0x0B);
+									insertPos -= scrcols;
+								} else if (insertPos > 0) {
+									// otherwise if our insertion pos > 0 then move to start of line
+									insertPos = gotoEditLineStart(insertPos);
 								} else {
-									strncpy(buffer, cmd_history[0], limit);			// Copy from the history to the buffer
-									printf("\r                                      \r*");
-									printf("%s", buffer);							// Output the buffer
-									insertPos = strlen(buffer);						// Set cursor to end of string
-									len = strlen(buffer);
-								}
-								//}
-								//else {
-									if(insertPos >= scrcols) {
-										putch(0x0B);
-										insertPos -= scrcols;
+									// otherwise do history thing
+									if (history_no > 0) {
+										removeEditLine(buffer, insertPos, len);
+										strncpy(buffer, cmd_history[--history_no], limit);			// Copy from the history to the buffer
+										printf("%s", buffer);							// Output the buffer
+										insertPos = strlen(buffer);						// Set cursor to end of string
+										len = strlen(buffer);
+									} else if (history_size > 0) {
+										// we're at the top of our history list
+										// replace current line (which may have been edited) with first entry
+										removeEditLine(buffer, insertPos, len);
+										strncpy(buffer, cmd_history[0], limit);			// Copy from the history to the buffer
+										printf("%s", buffer);							// Output the buffer
+										insertPos = strlen(buffer);						// Set cursor to end of string
+										len = strlen(buffer);
 									}
-								//}
+								}
 							} break;
 							case 0x7F: {	// Backspace
-								if(deleteCharacter(buffer, insertPos, len)) {
+								if (deleteCharacter(buffer, insertPos, len)) {
 									insertPos--;
 								}
 							} break;
@@ -302,13 +337,13 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 			}
 		}
 	}
-	len-=insertPos;					// Now just need to cursor to end of line; get # of characters to cursor
+	len -= insertPos;				// Now just need to cursor to end of line; get # of characters to cursor
 
-	while(len >= scrcols) {			// First cursor down if possible
+	while (len >= scrcols) {		// First cursor down if possible
 		putch(0x0A);
-		len-=scrcols;
+		len -= scrcols;
 	}
-	while(len-- > 0) putch(0x09);	// Then cursor right for the remainder
+	while (len-- > 0) putch(0x09);	// Then cursor right for the remainder
 
 	return keyr;					// Finally return the keycode
 }
