@@ -72,6 +72,9 @@
 			XDEF	_vdp_protocol_data
 
 			XDEF	_user_kbvector
+			
+			XDEF	_history_no
+			XDEF	_history_size
 
 			SEGMENT BSS		; This section is reset to 0 in cstartup.asm
 			
@@ -153,6 +156,11 @@ _vdp_protocol_data:	DS	VDPP_BUFFERLEN
 ; Userspace hooks
 ;
 _user_kbvector: 	DS	3		; Pointer to keyboard function
+
+;Cmd history
+
+_history_no:		DS 1
+_history_size:		DS 1
 
 			SECTION DATA		; This section is copied to RAM in cstartup.asm
 
