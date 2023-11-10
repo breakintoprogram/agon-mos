@@ -52,6 +52,7 @@
 			XREF	_keydelay 
 			XREF	_keyrate 
 			XREF 	_keyled
+			XREF	_mouseX
 			XREF	_gp
 			XREF	_vpd_protocol_flags
 			XREF	_vdp_protocol_state
@@ -142,7 +143,8 @@ vdp_protocol_vector:	JP	vdp_protocol_GP
 			JP	vdp_protocol_AUDIO
 			JP	vdp_protocol_MODE
 			JP	vdp_protocol_RTC
-			JP	vdp_protocol_KEYSTATE 
+			JP	vdp_protocol_KEYSTATE
+			JP	vdp_protocol_MOUSE
 ;
 vdp_protocol_vesize:	EQU	($-vdp_protocol_vector)/4
 	
@@ -309,4 +311,23 @@ vdp_protocol_KEYSTATE:	LD	HL, _vdp_protocol_data
 			LD	DE, _keydelay
 			LD	BC, 5
 			LDIR 
-			RET 
+			RET
+
+; Mouse data
+; Received after a mouse movement event, if mouse has been activated
+;
+; Word: X position
+; Word: Y position
+; Byte: Button state
+; Byte: Wheel delta
+; Word: X delta
+; Word: Y delta
+;
+vdp_protocol_MOUSE:	LD	HL, _vdp_protocol_data
+			LD	DE, _mouseX
+			LD	BC, 10
+			LDIR 
+			LD	A, (_vpd_protocol_flags)
+			OR	VDPP_FLAG_MOUSE
+			LD	(_vpd_protocol_flags), A
+			RET

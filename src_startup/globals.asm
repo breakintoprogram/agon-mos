@@ -43,12 +43,18 @@
 			XDEF	_scrrows
 			XDEF	_scrcolours
 			XDEF	_scrpixelIndex
-			XDEF	_rtc 
+			XDEF	_rtc
 			XDEF	_keydelay 
 			XDEF	_keyrate 
 			XDEF 	_keyled
 			XDEF	_scrmode
 			XDEF	_rtc_enable
+			XDEF	_mouseX
+			XDEF	_mouseY
+			XDEF	_mouseButtons
+			XDEF	_mouseWheel
+			XDEF	_mouseXDelta
+			XDEF	_mouseYDelta
 
 			XDEF	_errno
 			XDEF 	_coldBoot
@@ -97,6 +103,12 @@ _keyrate:		DS	2		; + 24h: Keyboard repeat rate
 _keyled:		DS	1		; + 26h: Keyboard LED status
 _scrmode:		DS	1		; + 27h: Screen mode
 _rtc_enable:		DS	1		; + 28h: RTC enable status
+_mouseX:		DS	2		; + 29h: Mouse X position
+_mouseY:		DS	2		; + 2Bh: Mouse Y position
+_mouseButtons:		DS	1		; + 2Dh: Mouse left+right+middle buttons (bits 0-2, 0=up, 1=down)
+_mouseWheel:		DS	1		; + 2Eh: Mouse wheel delta
+_mouseXDelta:		DS	2		; + 2Fh: Mouse X delta
+_mouseYDelta:		DS	2		; + 31h: Mouse Y delta
 
 _errno:			DS 	3		; extern int _errno
 _coldBoot:		DS	1		; extern char _coldBoot
@@ -125,8 +137,8 @@ _keymap:		DS	16		; A bitmap of pressed keys
 ; Bit 2: Pixel point packet received
 ; Bit 3: Audio packet received
 ; Bit 4: Mode packet received
-; Bit 5: Unused
-; Bit 6: Unused
+; Bit 5: RTC packet received
+; Bit 6: Mouse packet received
 ; Bit 7: Unused
 ;
 ; VDP protocol variables
