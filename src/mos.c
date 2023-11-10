@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	26/09/2023
+ * Last Updated:	10/11/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -33,6 +33,7 @@
  * 08/07/2023:		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
  * 15/09/2023:		Function mos_trim now includes the asterisk character as whitespace
  * 26/09/2023:		Refactored mos_GETRTC and mos_SETRTC
+ * 10/11/2023:		Added CONSOLE to mos_cmdSET
  */
 
 #include <eZ80.h>
@@ -609,6 +610,13 @@ int mos_cmdSET(char * ptr) {
 		putch(23);
 		putch(0);
 		putch(VDP_keycode);
+		putch(value & 0xFF);
+		return 0;
+	}
+	if(strcmp(command, "CONSOLE") == 0 && value <= 1) {
+		putch(23);
+		putch(0);
+		putch(VDP_consolemode);
 		putch(value & 0xFF);
 		return 0;
 	}

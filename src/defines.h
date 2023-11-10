@@ -2,11 +2,12 @@
  * Title:			AGON MOS - MOS defines
  * Author:			Dean Belfield
  * Created:			21/03/2023
- * Last Updated:	24/03/2023
+ * Last Updated:	10/11/2023
  * 
  * Modinfo:
  * 22/03/2023:		The VDP commands are now indexed from 0x80
  * 24/03/2023:		Added DEBUG
+ * 10/11/2023:		Added VDP_consolemode
  */
 
 #ifndef MOS_DEFINES_H
@@ -26,6 +27,7 @@
 #define VDP_rtc					0x87
 #define VDP_keystate			0x88
 #define VDP_logicalcoords		0xC0
+#define VDP_consolemode			0xFE
 #define VDP_terminalmode		0xFF
 
 #endif MOS_DEFINES_H
