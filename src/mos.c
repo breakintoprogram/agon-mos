@@ -2,7 +2,7 @@
  * Title:			AGON MOS - MOS code
  * Author:			Dean Belfield
  * Created:			10/07/2022
- * Last Updated:	10/11/2023
+ * Last Updated:	11/11/2023
  * 
  * Modinfo:
  * 11/07/2022:		Added mos_cmdDIR, mos_cmdLOAD, removed mos_cmdBYE
@@ -29,12 +29,12 @@
  * 26/03/2023:		Fixed SET KEYBOARD command
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
- * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT, mos_mount
  * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
  * 08/07/2023:		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
  * 15/09/2023:		Function mos_trim now includes the asterisk character as whitespace
  * 26/09/2023:		Refactored mos_GETRTC and mos_SETRTC
  * 10/11/2023:		Added CONSOLE to mos_cmdSET
+ * 11/11/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT, mos_mount
  */
 
 #include <eZ80.h>
@@ -63,7 +63,7 @@ extern volatile	BYTE vpd_protocol_flags;		// In globals.asm
 extern BYTE 	rtc;							// In globals.asm
 
 static FATFS	fs;					// Handle for the file system
-static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
+static char * 	mos_strtok_ptr;		// Pointer for current position in string tokeniser
 
 extern volatile BYTE history_no;
 
@@ -72,28 +72,28 @@ t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 // Array of MOS commands and pointer to the C function to run
 //
 static t_mosCommand mosCommands[] = {
-	{ ".", 			&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_DOT_ALIASES	},
-	{ "DIR",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_DIR_ALIASES	},
-	{ "CAT",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_CAT_ALIASES	},
-	{ "LOAD",		&mos_cmdLOAD,		HELP_LOAD_ARGS,		HELP_LOAD,	NULL	},
-	{ "SAVE", 		&mos_cmdSAVE,		HELP_SAVE_ARGS,		HELP_SAVE,	NULL	},
+	{ ".", 			&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,		HELP_DOT_ALIASES },
+	{ "DIR",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,		HELP_DIR_ALIASES },
+	{ "CAT",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,		HELP_CAT_ALIASES },
+	{ "LOAD",		&mos_cmdLOAD,		HELP_LOAD_ARGS,		HELP_LOAD,		NULL },
+	{ "SAVE", 		&mos_cmdSAVE,		HELP_SAVE_ARGS,		HELP_SAVE,		NULL },
 	{ "DELETE",		&mos_cmdDEL,		HELP_DELETE_ARGS,	HELP_DELETE,	HELP_DELETE_ALIASES	},
 	{ "ERASE",		&mos_cmdDEL,		HELP_DELETE_ARGS,	HELP_DELETE,	HELP_ERASE_ALIASES	},
-	{ "JMP",		&mos_cmdJMP,		HELP_JMP_ARGS,		HELP_JMP,	NULL	},
-	{ "RUN", 		&mos_cmdRUN,		HELP_RUN_ARGS,		HELP_RUN,	NULL	},
-	{ "CD", 		&mos_cmdCD,		HELP_CD_ARGS,		HELP_CD,	NULL	},
+	{ "JMP",		&mos_cmdJMP,		HELP_JMP_ARGS,		HELP_JMP,		NULL },
+	{ "RUN", 		&mos_cmdRUN,		HELP_RUN_ARGS,		HELP_RUN,		NULL },
+	{ "CD", 		&mos_cmdCD,			HELP_CD_ARGS,		HELP_CD,		NULL },
 	{ "RENAME",		&mos_cmdREN,		HELP_RENAME_ARGS,	HELP_RENAME,	HELP_RENAME_ALIASES	},
 	{ "MOVE",		&mos_cmdREN,		HELP_RENAME_ARGS,	HELP_RENAME,	HELP_MOVE_ALIASES	},
-	{ "MKDIR", 		&mos_cmdMKDIR,		HELP_MKDIR_ARGS,	HELP_MKDIR,	NULL	},
-	{ "COPY", 		&mos_cmdCOPY,		HELP_COPY_ARGS,		HELP_COPY,	NULL	},
-	{ "SET",		&mos_cmdSET,		HELP_SET_ARGS,		HELP_SET,	NULL	},
-	{ "VDU",		&mos_cmdVDU,		HELP_VDU_ARGS,		HELP_VDU,	NULL	},
-	{ "TIME", 		&mos_cmdTIME,		HELP_TIME_ARGS,		HELP_TIME,	NULL	},
-	{ "CREDITS",		&mos_cmdCREDITS,	NULL,			HELP_CREDITS,	NULL	},
-	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE_ARGS,		HELP_TYPE,	NULL	},
-	{ "CLS",		&mos_cmdCLS,		NULL,			HELP_CLS,	NULL	},
-	{ "MOUNT",		&mos_cmdMOUNT,		NULL,			HELP_MOUNT,	NULL	},
-	{ "HELP",		&mos_cmdHELP,		HELP_HELP_ARGS,		HELP_HELP,	NULL	},
+	{ "MKDIR", 		&mos_cmdMKDIR,		HELP_MKDIR_ARGS,	HELP_MKDIR,		NULL },
+	{ "COPY", 		&mos_cmdCOPY,		HELP_COPY_ARGS,		HELP_COPY,		NULL },
+	{ "SET",		&mos_cmdSET,		HELP_SET_ARGS,		HELP_SET,		NULL },
+	{ "VDU",		&mos_cmdVDU,		HELP_VDU_ARGS,		HELP_VDU,		NULL },
+	{ "TIME", 		&mos_cmdTIME,		HELP_TIME_ARGS,		HELP_TIME,		NULL },
+	{ "CREDITS",	&mos_cmdCREDITS,	NULL,				HELP_CREDITS,	NULL },
+	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE_ARGS,		HELP_TYPE,		NULL },
+	{ "CLS",		&mos_cmdCLS,		NULL,				HELP_CLS,		NULL },
+	{ "MOUNT",		&mos_cmdMOUNT,		NULL,				HELP_MOUNT,		NULL },
+	{ "HELP",		&mos_cmdHELP,		HELP_HELP_ARGS,		HELP_HELP,		NULL },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -125,12 +125,16 @@ static char * mos_errors[] = {
 	"Invalid executable",
 };
 
+#define mos_errors_count (sizeof(mos_errors)/sizeof(char *))
+
 // Output a file error
 // Parameters:
 // - error: The FatFS error number
 //
 void mos_error(int error) {
-	printf("\n\r%s\n\r", mos_errors[error]);
+	if(error >= 0 && error < mos_errors_count) {
+		printf("\n\r%s\n\r", mos_errors[error]);
+	}
 }
 
 // Wait for a keycode character from the VPD
@@ -759,8 +763,8 @@ void printCommandInfo(t_mosCommand * cmd) {
 // Parameters:
 // - ptr: Pointer to the argument string in the line edit buffer
 // Returns:
-// -  0: success
-//   -1: command not found
+// -  0: Success
+//   20: Failure
 //
 int mos_cmdHELP(char *ptr) {
 	int i;
@@ -782,10 +786,8 @@ int mos_cmdHELP(char *ptr) {
 	}
 
 	if (cmd != NULL && !found) {
-		printf("Error: '%s' not found\r\n", cmd);
-		return -1;
+		return 20;
 	}
-
 	return 0;
 }
 
