@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - Globals
 ; Author:	Dean Belfield
 ; Created:	01/08/2022
-; Last Updated:	13/08/2023
+; Last Updated:	11/11/2023
 ;
 ; Modinfo:
 ; 09/08/2022:	Added sysvars structure, cursorX, cursorY
@@ -20,6 +20,7 @@
 ; 05/06/2023:	Added RTC enable flag
 ; 03/08/2023:	Added user_kbvector
 ; 13/08/2023:	Added keymap
+; 11/11/2023:	Added i2c
 
 			INCLUDE	"../src/equs.inc"
 			
@@ -72,6 +73,9 @@
 			XDEF	_vdp_protocol_data
 
 			XDEF	_user_kbvector
+
+			XDEF	_history_no
+			XDEF	_history_size			
 
 			XDEF	_i2c_slave_rw
 			XDEF	_i2c_error

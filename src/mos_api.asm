@@ -663,10 +663,9 @@ mos_api_getkbmap:	LD	IX, _keymap
 			RET 
 
 ; Open the I2C bus as master
-; C: frequency ID
-; Returns: None
-mos_api_i2c_open:
-			PUSH	BC
+;   C: Frequency ID
+;
+mos_api_i2c_open:	PUSH	BC
 			PUSH	DE
 			PUSH	HL
 			PUSH	IX
@@ -676,9 +675,8 @@ mos_api_i2c_open:
 			LD	L, C
 			PUSH	HL
 			CALL	_mos_I2C_OPEN
+			POP	HL
 ;			
-			POP HL
-			
 			POP	IY
 			POP	IX
 			POP	HL
@@ -687,9 +685,8 @@ mos_api_i2c_open:
 			RET
 
 ; Close the I2C bus
-; Returns: None
-mos_api_i2c_close:
-			PUSH	BC
+;
+mos_api_i2c_close:	PUSH	BC
 			PUSH	DE
 			PUSH	HL
 			PUSH	IX
@@ -705,48 +702,57 @@ mos_api_i2c_close:
 			RET
 
 ; Write n bytes to the I2C bus
-;  C: I2C address
-;  B: Number of bytes to write, maximum 32
-; HL: Address of buffer containing the bytes to send
-mos_api_i2c_write:
-			PUSH	DE
+;   C: I2C address
+;   B: Number of bytes to write, maximum 32
+; HLU: Address of buffer containing the bytes to send
+; 
+mos_api_i2c_write:	PUSH	DE
 			PUSH	IX
 			PUSH	IY
+;
+			LD	A, MB		; Check if MBASE is 0
+			OR	A, A 
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;			
-			PUSH	HL				; Address of buffer
+			PUSH	HL		; Address of buffer
 			LD	HL,0
 			LD	L, B
-			PUSH	HL				; Count
+			PUSH	HL		; Count
 			LD	L, C
-			PUSH	HL				; I2C address
+			PUSH	HL		; I2C address
 			CALL	_mos_I2C_WRITE
 			POP	HL
-			POP HL
-			POP HL
+			POP	HL
+			POP	HL
 ;			
 			POP	IY
 			POP	IX
 			POP	DE
 			RET
+
 ; Read n bytes from the I2C bus
-;  C: I2C address
-;  B: Number of bytes to read, maximum 32
-; HL: Address of buffer to read bytes to
-mos_api_i2c_read:
-			PUSH	DE
+;   C: I2C address
+;   B: Number of bytes to read, maximum 32
+; HLU: Address of buffer to read bytes to
+;
+mos_api_i2c_read:	PUSH	DE
 			PUSH	IX
 			PUSH	IY
+;
+			LD	A, MB		; Check if MBASE is 0
+			OR	A, A 
+			CALL	NZ, SET_AHL24	; If it is running in classic Z80 mode, set U to MB
 ;			
-			PUSH	HL				; Address of buffer
+			PUSH	HL		; Address of buffer
 			LD	HL,0
 			LD	L, B
-			PUSH	HL				; Count
+			PUSH	HL		; Count
 			LD	L, C
-			PUSH	HL				; I2C address
+			PUSH	HL		; I2C address
 			CALL	_mos_I2C_READ
 			POP	HL
-			POP HL
-			POP HL
+			POP	HL
+			POP	HL
 ;			
 			POP	IY
 			POP	IX
