@@ -51,6 +51,8 @@
 #include "clock.h"
 #include "ff.h"
 
+char  	cmd[256];				// Array for the command line handler
+
 extern void *	set_vector(unsigned int vector, void(*handler)(void));	// In vectors16.asm
 
 extern int 		exec16(UINT24 addr, char * params);	// In misc.asm
@@ -87,6 +89,7 @@ static t_mosCommand mosCommands[] = {
 	{ "VDU",		&mos_cmdVDU		},
 	{ "TIME", 		&mos_cmdTIME	},
 	{ "CREDITS",	&mos_cmdCREDITS	},
+	{ "EXEC",		&mos_cmdEXEC	},
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -416,6 +419,28 @@ int mos_cmdLOAD(char * ptr) {
 	if(!mos_parseNumber(NULL, &addr)) addr = MOS_defaultLoadAddress;
 	fr = mos_LOAD(filename, addr, 0);
 	return fr;	
+}
+
+// EXEC <filename>
+//   Run a batch file containing MOS commands
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdEXEC(char *ptr) {
+	FRESULT	fr;
+	char *  filename;
+	UINT24 	addr;
+	char    buf[256];
+	
+	if(
+		!mos_parseString(NULL, &filename)
+	) {
+		return 19; // Bad Parameter
+	}
+	fr = mos_EXEC(filename, buf, sizeof buf);
+	return fr;
 }
 
 // SAVE <filename> <addr> <len> command
@@ -876,26 +901,32 @@ UINT24 mos_MKDIR(char * filename) {
 	return fr;
 }
 
-// Load and run the config file 
+// Load and run a batch file of MOS commands.
 // Parameters:
-// - filename: The config file to execute
+// - filename: The batch file to execute
 // - buffer: Storage for each line to be loaded into and executed from (recommend 256 bytes)
 // - size: Size of buffer (in bytes)
 // Returns:
-// - FatFS return code
+// - FatFS return code (of the last command)
 //
-UINT24 mos_BOOT(char * filename, char * buffer, UINT24 size) {
+UINT24 mos_EXEC(char * filename, char * buffer, UINT24 size) {
 	FRESULT	fr;
 	FIL	   	fil;
 	UINT   	br;	
 	void * 	dest;
 	FSIZE_t fSize;
+	int     line =  0;
 	
 	fr = f_open(&fil, filename, FA_READ);
 	if(fr == FR_OK) {
 		while(!f_eof(&fil)) {
+			line++;
 			f_gets(buffer, size, &fil);
-			mos_exec(buffer);
+			fr = mos_exec(buffer);
+			if (fr != FR_OK) {
+				printf("\r\nError executing %s at line %d\r\n", filename, line);
+				break;
+			}
 		}
 	}
 	f_close(&fil);	
