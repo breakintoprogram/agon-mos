@@ -2,7 +2,7 @@
  * Title:			AGON MOS
  * Author:			Dean Belfield
  * Created:			19/06/2022
- * Last Updated:	27/08/2023
+ * Last Updated:	11/11/2023
  *
  * Modinfo:
  * 11/07/2022:		Version 0.01: Tweaks for Agon Light, Command Line code added
@@ -26,6 +26,7 @@
  * 16/05/2023:		Version 1.04: Fixed MASTERCLOCK value in uart.h, added startup beep
  * 03/08/2023:				RC2	+ Enhanced low-level keyboard functionality
  * 27/09/2023:					+ Updated RTC
+ * 11/11/2023:				RC3	+ See Github for full list of changes
  */
 
 #include <eZ80.h>
@@ -46,7 +47,7 @@
 
 #define		MOS_version		1
 #define		MOS_revision 	4
-#define		MOS_rc			2
+#define		MOS_rc			3
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -135,7 +136,7 @@ int main(void) {
 	printf("@Baud Rate: %d\n\r\n\r", pUART0.baudRate);
 	#endif
 
-	(void)mos_mount();								// Mount the SD card
+	mos_mount();									// Mount the SD card
 
 	putch(7);										// Startup beep
 	history_no = 0;
