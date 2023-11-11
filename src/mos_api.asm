@@ -2,7 +2,7 @@
 ; Title:	AGON MOS - API code
 ; Author:	Dean Belfield
 ; Created:	24/07/2022
-; Last Updated:	10/08/2023
+; Last Updated:	10/11/2023
 ;
 ; Modinfo:
 ; 03/08/2022:	Added a handful of MOS API calls and stubbed FatFS calls
@@ -23,6 +23,8 @@
 ; 30/05/2023:	Fixed mos_api_fgetc to set carry if at end of file
 ; 03/08/2023:	Added mos_api_setkbvector
 ; 10/08/2023:	Added mos_api_getkbmap
+; 10/11/2023:	Added mos_api_i2c_close, mos_api_i2c_open, mos_api_i2c_read, mos_api_i2c_write
+
 
 			.ASSUME	ADL = 1
 			
@@ -59,6 +61,10 @@
 			XREF	_mos_FREAD
 			XREF	_mos_FWRITE
 			XREF	_mos_FLSEEK
+			XREF	_mos_I2C_OPEN
+			XREF	_mos_I2C_CLOSE
+			XREF	_mos_I2C_WRITE
+			XREF	_mos_I2C_READ
 			
 			XREF	_fat_EOF		; In mos.c
 
@@ -123,6 +129,10 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_flseek		; 0x1C
 			DW	mos_api_setkbvector	; 0x1D
 			DW	mos_api_getkbmap	; 0x1E
+			DW	mos_api_i2c_open	; 0x1F
+			DW	mos_api_i2c_close	; 0x20
+			DW	mos_api_i2c_write	; 0x21
+			DW	mos_api_i2c_read	; 0x22
 ;			
 $$:			AND	7Fh			; Else remove the top bit
 			CALL	SWITCH_A		; And switch on this table
@@ -651,6 +661,97 @@ $$:			PUSH	HL
 ; 
 mos_api_getkbmap:	LD	IX, _keymap
 			RET 
+
+; Open the I2C bus as master
+; C: frequency ID
+; Returns: None
+mos_api_i2c_open:
+			PUSH	BC
+			PUSH	DE
+			PUSH	HL
+			PUSH	IX
+			PUSH	IY
+;			
+			LD	HL,0
+			LD	L, C
+			PUSH	HL
+			CALL	_mos_I2C_OPEN
+;			
+			POP HL
+			
+			POP	IY
+			POP	IX
+			POP	HL
+			POP	DE
+			POP	BC
+			RET
+
+; Close the I2C bus
+; Returns: None
+mos_api_i2c_close:
+			PUSH	BC
+			PUSH	DE
+			PUSH	HL
+			PUSH	IX
+			PUSH	IY
+;			
+			CALL	_mos_I2C_CLOSE
+;			
+			POP	IY
+			POP	IX
+			POP	HL
+			POP	DE
+			POP	BC
+			RET
+
+; Write n bytes to the I2C bus
+;  C: I2C address
+;  B: Number of bytes to write, maximum 32
+; HL: Address of buffer containing the bytes to send
+mos_api_i2c_write:
+			PUSH	DE
+			PUSH	IX
+			PUSH	IY
+;			
+			PUSH	HL				; Address of buffer
+			LD	HL,0
+			LD	L, B
+			PUSH	HL				; Count
+			LD	L, C
+			PUSH	HL				; I2C address
+			CALL	_mos_I2C_WRITE
+			POP	HL
+			POP HL
+			POP HL
+;			
+			POP	IY
+			POP	IX
+			POP	DE
+			RET
+; Read n bytes from the I2C bus
+;  C: I2C address
+;  B: Number of bytes to read, maximum 32
+; HL: Address of buffer to read bytes to
+mos_api_i2c_read:
+			PUSH	DE
+			PUSH	IX
+			PUSH	IY
+;			
+			PUSH	HL				; Address of buffer
+			LD	HL,0
+			LD	L, B
+			PUSH	HL				; Count
+			LD	L, C
+			PUSH	HL				; I2C address
+			CALL	_mos_I2C_READ
+			POP	HL
+			POP HL
+			POP HL
+;			
+			POP	IY
+			POP	IX
+			POP	DE
+			RET
 
 ; Open UART1
 ; IXU: Pointer to UART struct

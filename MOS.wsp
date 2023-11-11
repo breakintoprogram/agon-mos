@@ -4,3 +4,5 @@ ptn_Child1=Frames
 [WorkState_v1_2.Frames]
 ptn_Child1=ChildFrames
 
+[WorkState_v1_2.Frames.ChildFrames]
+

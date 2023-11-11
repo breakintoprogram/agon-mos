@@ -72,9 +72,12 @@
 			XDEF	_vdp_protocol_data
 
 			XDEF	_user_kbvector
-			
-			XDEF	_history_no
-			XDEF	_history_size
+
+			XDEF	_i2c_slave_rw
+			XDEF	_i2c_error
+			XDEF	_i2c_role
+			XDEF	_i2c_msg_ptr
+			XDEF	_i2c_msg_size
 
 			SEGMENT BSS		; This section is reset to 0 in cstartup.asm
 			
@@ -157,10 +160,18 @@ _vdp_protocol_data:	DS	VDPP_BUFFERLEN
 ;
 _user_kbvector: 	DS	3		; Pointer to keyboard function
 
-;Cmd history
+; I2C
+;
+_i2c_slave_rw:		DS	1		; 7 bit slave address + R/W bit
+_i2c_error:		DS	1		; Error report to caller application
+_i2c_role:		DS	1		; I2C current state
+_i2c_msg_ptr:		DS	3		; Pointer to the current buffer
+_i2c_msg_size:		DS	1		; The (remaining) message size
 
-_history_no:		DS 1
-_history_size:		DS 1
+; Command history
+;
+_history_no:		DS	1
+_history_size:		DS 	1
 
 			SECTION DATA		; This section is copied to RAM in cstartup.asm
 
