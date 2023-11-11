@@ -35,6 +35,7 @@
 #include <String.h>
 
 #include "defines.h"
+#include "version.h"
 #include "config.h"
 #include "uart.h"
 #include "spi.h"
@@ -42,10 +43,6 @@
 #include "ff.h"
 #include "clock.h"
 #include "mos.h"
-
-#define		MOS_version		1
-#define		MOS_revision 	4
-#define		MOS_rc			2
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
@@ -124,9 +121,13 @@ int main(void) {
 	if(coldBoot == 0) {								// If a warm boot detected then
 		putch(12);									// Clear the screen
 	}
-	printf("Agon Quark MOS Version %d.%02d", MOS_version, MOS_revision);
-	#if MOS_rc > 0
-		printf(" RC%d", MOS_rc);
+	printf("Agon %s MOS Version %d.%d.%d", VERSION_VARIANT, VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+	#if VERSION_CANDIDATE > 0
+		printf(" %s%d", VERSION_TYPE, VERSION_CANDIDATE);
+	#endif
+	// Show build if defined (intended to be auto-generated string from build script from git commit hash)
+	#ifdef VERSION_BUILD
+		printf(" Build %s", VERSION_BUILD);
 	#endif
 	printf("\n\r\n\r");
 	#if	DEBUG > 0
