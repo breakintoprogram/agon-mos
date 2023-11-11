@@ -29,6 +29,7 @@
  * 26/03/2023:		Fixed SET KEYBOARD command
  * 14/04/2023:		Added fat_EOF
  * 15/04/2023:		Added mos_GETFIL, mos_FREAD, mos_FWRITE, mos_FLSEEK, refactored MOS file commands
+ * 23/04/2023:		Added mos_cmdHELP, mos_cmdTYPE, mos_cmdCLS, mos_cmdMOUNT, mos_mount
  * 30/05/2023:		Fixed bug in mos_parseNumber to detect invalid numeric characters, mos_FGETC now returns EOF flag
  * 08/07/2023:		Added mos_trim function; mos_exec now trims whitespace from input string, various bug fixes
  * 15/09/2023:		Function mos_trim now includes the asterisk character as whitespace
@@ -50,6 +51,7 @@
 #include "uart.h"
 #include "clock.h"
 #include "ff.h"
+#include "strings.h"
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));	// In vectors16.asm
 
@@ -60,6 +62,7 @@ extern volatile	BYTE keyascii;					// In globals.asm
 extern volatile	BYTE vpd_protocol_flags;		// In globals.asm
 extern BYTE 	rtc;							// In globals.asm
 
+static FATFS	fs;					// Handle for the file system
 static char * mos_strtok_ptr;	// Pointer for current position in string tokeniser
 
 extern volatile BYTE history_no;
@@ -69,24 +72,28 @@ t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
 // Array of MOS commands and pointer to the C function to run
 //
 static t_mosCommand mosCommands[] = {
-	{ ".", 			&mos_cmdDIR		},
-	{ "DIR",		&mos_cmdDIR		},
-	{ "CAT",		&mos_cmdDIR		},
-	{ "LOAD",		&mos_cmdLOAD	},
-	{ "SAVE", 		&mos_cmdSAVE	},
-	{ "DELETE",		&mos_cmdDEL		},
-	{ "ERASE",		&mos_cmdDEL		},
-	{ "JMP",		&mos_cmdJMP		},
-	{ "RUN", 		&mos_cmdRUN		},
-	{ "CD", 		&mos_cmdCD		},
-	{ "RENAME",		&mos_cmdREN		},
-	{ "MOVE",		&mos_cmdREN		},
-	{ "MKDIR", 		&mos_cmdMKDIR	},
-	{ "COPY", 		&mos_cmdCOPY	},
-	{ "SET",		&mos_cmdSET		},
-	{ "VDU",		&mos_cmdVDU		},
-	{ "TIME", 		&mos_cmdTIME	},
-	{ "CREDITS",	&mos_cmdCREDITS	},
+	{ ".", 			&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_DOT_ALIASES	},
+	{ "DIR",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_DIR_ALIASES	},
+	{ "CAT",		&mos_cmdDIR,		HELP_CAT_ARGS,		HELP_CAT,	HELP_CAT_ALIASES	},
+	{ "LOAD",		&mos_cmdLOAD,		HELP_LOAD_ARGS,		HELP_LOAD,	NULL	},
+	{ "SAVE", 		&mos_cmdSAVE,		HELP_SAVE_ARGS,		HELP_SAVE,	NULL	},
+	{ "DELETE",		&mos_cmdDEL,		HELP_DELETE_ARGS,	HELP_DELETE,	HELP_DELETE_ALIASES	},
+	{ "ERASE",		&mos_cmdDEL,		HELP_DELETE_ARGS,	HELP_DELETE,	HELP_ERASE_ALIASES	},
+	{ "JMP",		&mos_cmdJMP,		HELP_JMP_ARGS,		HELP_JMP,	NULL	},
+	{ "RUN", 		&mos_cmdRUN,		HELP_RUN_ARGS,		HELP_RUN,	NULL	},
+	{ "CD", 		&mos_cmdCD,		HELP_CD_ARGS,		HELP_CD,	NULL	},
+	{ "RENAME",		&mos_cmdREN,		HELP_RENAME_ARGS,	HELP_RENAME,	HELP_RENAME_ALIASES	},
+	{ "MOVE",		&mos_cmdREN,		HELP_RENAME_ARGS,	HELP_RENAME,	HELP_MOVE_ALIASES	},
+	{ "MKDIR", 		&mos_cmdMKDIR,		HELP_MKDIR_ARGS,	HELP_MKDIR,	NULL	},
+	{ "COPY", 		&mos_cmdCOPY,		HELP_COPY_ARGS,		HELP_COPY,	NULL	},
+	{ "SET",		&mos_cmdSET,		HELP_SET_ARGS,		HELP_SET,	NULL	},
+	{ "VDU",		&mos_cmdVDU,		HELP_VDU_ARGS,		HELP_VDU,	NULL	},
+	{ "TIME", 		&mos_cmdTIME,		HELP_TIME_ARGS,		HELP_TIME,	NULL	},
+	{ "CREDITS",		&mos_cmdCREDITS,	NULL,			HELP_CREDITS,	NULL	},
+	{ "TYPE",		&mos_cmdTYPE,		HELP_TYPE_ARGS,		HELP_TYPE,	NULL	},
+	{ "CLS",		&mos_cmdCLS,		NULL,			HELP_CLS,	NULL	},
+	{ "MOUNT",		&mos_cmdMOUNT,		NULL,			HELP_MOUNT,	NULL	},
+	{ "HELP",		&mos_cmdHELP,		HELP_HELP_ARGS,		HELP_HELP,	NULL	},
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -694,6 +701,94 @@ int mos_cmdCREDITS(char *ptr) {
 	return 0;
 }
 
+// TYPE <filename>
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdTYPE(char * ptr) {
+	FRESULT	fr;
+	char *  filename;
+	UINT24 	addr;
+
+	if(!mos_parseString(NULL, &filename))
+		return 19; // Bad Parameter
+
+	fr = mos_TYPE(filename);
+	return fr;
+}
+
+// CLS
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int	mos_cmdCLS(char *ptr) {
+	putchar(12);
+	return 0;
+}
+
+// MOUNT
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int	mos_cmdMOUNT(char *ptr) {
+	int fr;
+
+	fr = mos_mount();
+	if (fr != FR_OK)
+		mos_error(fr);
+	return 0;
+}
+
+void printCommandInfo(t_mosCommand * cmd) {
+	printf("%s", cmd->name);
+	if (cmd->args != NULL)
+		printf(" %s", cmd->args);
+	if (cmd->aliases != NULL)
+		printf(" (Aliases: %s)", cmd->aliases);
+	printf("\r\n");
+	printf("%s\r\n", cmd->help);
+}
+
+// HELP
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// -  0: success
+//   -1: command not found
+//
+int mos_cmdHELP(char *ptr) {
+	int i;
+	int found = 0;
+	char *cmd;
+
+	mos_parseString(NULL, &cmd);
+	if (cmd != NULL && strcasecmp(cmd, "all") == 0)
+		cmd = NULL;
+
+	for (i = 0; i < sizeof(mosCommands) / sizeof(mosCommands[0]); ++i) {
+		if (cmd == NULL) 
+			printCommandInfo(&mosCommands[i]);
+		else
+			if (strcasecmp(cmd, mosCommands[i].name) == 0) {
+				printCommandInfo(&mosCommands[i]);
+				found = 1;
+			}
+	}
+
+	if (cmd != NULL && !found) {
+		printf("Error: '%s' not found\r\n", cmd);
+		return -1;
+	}
+
+	return 0;
+}
+
 // Load a file from SD card to memory
 // Parameters:
 // - filename: Path of file to load
@@ -736,6 +831,38 @@ UINT24	mos_SAVE(char * filename, UINT24 address, UINT24 size) {
 		fr = f_write(&fil, (void *)address, size, &br);
 	}
 	f_close(&fil);	
+	return fr;
+}
+
+// Display a file from SD card on the screen
+// Parameters:
+// - filename: Path of file to load
+// Returns:
+// - FatFS return code
+//
+UINT24 mos_TYPE(char * filename) {
+	FRESULT	fr;
+	FIL	fil;
+	UINT   	br;
+	void * 	dest;
+	FSIZE_t fSize;
+	char	buf[512];
+	int	i;
+
+	fr = f_open(&fil, filename, FA_READ);
+	if(fr != FR_OK)
+		goto out1;
+
+	while (1) {
+		fr = f_read(&fil, (void *)buf, sizeof buf, &br);
+		if (br == 0)
+			break;
+		for (i = 0; i < br; ++i)
+			putchar(buf[i]);
+	}
+
+	f_close(&fil);
+out1:
 	return fr;
 }
 
@@ -1168,3 +1295,14 @@ UINT8 fat_EOF(FIL * fp) {
 	}
 	return 0;
 }
+
+// (Re-)mount the MicroSD card
+// Parameters:
+// - None
+// Returns:
+// - fatfs error code
+//
+int mos_mount(void) {
+	return f_mount(&fs, "", 1);			// Mount the SD card
+}
+

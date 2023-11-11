@@ -61,7 +61,6 @@ extern volatile char	gp;				// General poll variable
 extern volatile BYTE history_no;
 extern volatile BYTE history_size;
 
-static FATFS 	fs;						// Handle for the file system
 static char  	cmd[256];				// Array for the command line handler
 
 // Wait for the ESP32 to respond with a GP packet to signify it is ready
@@ -136,8 +135,8 @@ int main(void) {
 	printf("@Baud Rate: %d\n\r\n\r", pUART0.baudRate);
 	#endif
 
-	f_mount(&fs, "", 1);							// Mount the SD card
-	
+	(void)mos_mount();								// Mount the SD card
+
 	putch(7);										// Startup beep
 	history_no = 0;
 	history_size = 0;

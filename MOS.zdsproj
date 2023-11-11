@@ -31,6 +31,7 @@
 <file filter-key="">src\mos_api.inc</file>
 <file filter-key="">src\defines.h</file>
 <file filter-key="">src\i2c.c</file>
+<file filter-key="">src\strings.c</file>
 </files>
 
 <!-- configuration information -->
