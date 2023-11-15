@@ -161,7 +161,7 @@ UINT8	fat_EOF(FIL * fp);
 #define HELP_SET			"Set a system option\r\n\r\n" \
 							"Keyboard Layout\r\n" \
 							"SET KEYBOARD n: Set the keyboard layout\r\n" \
-							"    0: UK\r\n" \
+							"    0: UK (default)\r\n" \
 							"    1: US\r\n" \
 							"    2: German\r\n" \
 							"    3: Italian\r\n" \
@@ -169,10 +169,17 @@ UINT8	fat_EOF(FIL * fp);
 							"    5: French\r\n" \
 							"    6: Belgian\r\n" \
 							"    7: Norwegian\r\n" \
-							"    8: Japanese\r\n\r\n" \
+							"    8: Japanese\r\n" \
+							"    9: US International\r\n" \
+							"   10: US International (alternative)\r\n" \
+							"   11: Swiss (German)\r\n" \
+							"   12: Swiss (French)\r\n" \
+							"   13: Danish\r\n" \
+							"   14: Swedish\r\n" \
+							"   15: Portuguese\r\n\r\n" \
 							"Serial Console\r\n" \
 							"SET CONSOLE n: Serial console\r\n" \
-							"    0: Console off\r\n" \
+							"    0: Console off (default)\r\n" \
 							"    1: Console on\r\n"
 #define HELP_SET_ARGS		"<option> <value>"
 
