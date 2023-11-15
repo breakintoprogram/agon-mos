@@ -97,8 +97,11 @@
 ;
 mos_api:		CP	80h			; Check if it is a FatFS command
 			JR	NC, $F			; Yes, so jump to next block
+			CP	mos_api_block1_size	; Check if out of bounds
+			RET	NC			; It is, so do nothing
 			CALL	SWITCH_A		; Switch on this table
-			DW	mos_api_getkey		; 0x00
+;
+mos_api_block1_start:	DW	mos_api_getkey		; 0x00
 			DW	mos_api_load		; 0x01
 			DW	mos_api_save		; 0x02
 			DW	mos_api_cd		; 0x03
@@ -133,10 +136,15 @@ mos_api:		CP	80h			; Check if it is a FatFS command
 			DW	mos_api_i2c_close	; 0x20
 			DW	mos_api_i2c_write	; 0x21
 			DW	mos_api_i2c_read	; 0x22
+
+mos_api_block1_size:	EQU 	($ - mos_api_block1_start) / 2
 ;			
 $$:			AND	7Fh			; Else remove the top bit
+			CP	mos_api_block2_size	; Check if out of bounds
+			RET	NC			; It is, so do nothing
 			CALL	SWITCH_A		; And switch on this table
-			DW	ffs_api_fopen
+
+mos_api_block2_start:	DW	ffs_api_fopen
 			DW	ffs_api_fclose
 			DW	ffs_api_fread
 			DW	ffs_api_fwrite
@@ -174,6 +182,8 @@ $$:			AND	7Fh			; Else remove the top bit
 			DW	ffs_api_getlabel
 			DW	ffs_api_setlabel
 			DW	ffs_api_setcp
+
+mos_api_block2_size:	EQU 	($ - mos_api_block2_start) / 2
 
 ; Get keycode
 ; Returns:
