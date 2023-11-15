@@ -617,14 +617,14 @@ int mos_cmdSET(char * ptr) {
 	) {
 		return 19; // Bad Parameter
 	}
-	if(strcmp(command, "KEYBOARD") == 0 && value <= 15) {
+	if(strcasecmp(command, "KEYBOARD") == 0 && value <= 15) {
 		putch(23);
 		putch(0);
 		putch(VDP_keycode);
 		putch(value & 0xFF);
 		return 0;
 	}
-	if(strcmp(command, "CONSOLE") == 0 && value <= 1) {
+	if(strcasecmp(command, "CONSOLE") == 0 && value <= 1) {
 		putch(23);
 		putch(0);
 		putch(VDP_consolemode);
