@@ -640,16 +640,60 @@ int mos_cmdSET(char * ptr) {
 // Returns:
 // - MOS error code
 //
-int	mos_cmdVDU(char *ptr) {
-	UINT24 	value;
-	
-	while(mos_parseNumber(NULL, &value)) {
-		if(value > 255) {
-			return 19;	// Bad Parameter
-		}
-		putch(value);
-	}
-	return 0;
+int mos_cmdVDU(char *ptr) {
+    char *value_str;
+    UINT24 value = 0;
+    
+    while (mos_parseString(NULL, &value_str)) {
+        UINT8 isLong = 0;
+        UINT8 base = 10;
+        char *endPtr;
+        size_t len = strlen(value_str);
+
+        //Strip semicolon notation and set as Long
+        if (len > 0 && value_str[len - 1] == ';') {
+            value_str[len - 1] = '\0';
+            len--;
+            isLong = 1;
+        }
+
+        // Check for '0x' or '0X' prefix
+        if (len > 2 && (value_str[0] == '0' && tolower(value_str[1] == 'x'))) {
+            base = 16;
+            value_str += 2;
+            len -= 2;
+        }
+        // Check for '&' prefix
+        if (value_str[0] == '&') {
+            base = 16;
+            value_str++;
+            len--;
+        }
+        // Check for 'h' suffix
+        if (len > 0 && tolower(value_str[len - 1]) == 'h') {
+            value_str[len - 1] = '\0';
+            base = 16;
+        }
+
+        value = strtol(value_str, &endPtr, base);
+
+        if (*endPtr != '\0' || value > 65535) {
+            return 19;
+        }
+		
+        if (value > 255) {
+            isLong = 1;
+        }
+
+        if (isLong) {
+            putch(value & 0xFF); // write LSB
+            putch(value >> 8);   // write MSB
+        } else {
+            putch(value);
+        }
+    }
+
+    return 0;
 }
 
 // TIME
