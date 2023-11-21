@@ -428,9 +428,10 @@ int mos_cmdKEY(char *ptr) {
 
 	if (!mos_parseNumber(NULL, &fn_number)) {
 		
+		UINT8 key;
 		printf("Hotkey assignments:\r\n\r\n");
 		
-		for (int key = 0; key < 12; key++) {
+		for (key = 0; key < 12; key++) {
 				printf("F%d: %s\r\n", key+1, hotkey_strings[key] == NULL ? "N/A" : hotkey_strings[key]);
 		}
 				
