@@ -160,7 +160,7 @@ int main(void) {
 			}
 		}
 		else {
-			printf("%cEscape\n\r", MOS_prompt);
+			printf("%s%cEscape\n\r", cwd, MOS_prompt);
 		}
 	}
 
