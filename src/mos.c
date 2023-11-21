@@ -63,6 +63,7 @@ extern volatile	BYTE vpd_protocol_flags;		// In globals.asm
 extern BYTE 	rtc;							// In globals.asm
 
 static FATFS	fs;					// Handle for the file system
+TCHAR cwd[256];						// Hold current working directory.
 static char * 	mos_strtok_ptr;		// Pointer for current position in string tokeniser
 
 extern volatile BYTE history_no;
@@ -274,6 +275,35 @@ char * mos_strtok_r(char *s1, const char *s2, char **ptr) {
 	*ptr = end + 1;
 	
 	return s1;
+}
+
+//Alternative to missing strnlen() in ZDS libraries
+size_t mos_strnlen(const char *s, size_t maxlen) {
+    size_t len = 0;
+    while (len < maxlen && s[len] != '\0') {
+        len++;
+    }
+    return len;
+}
+
+//Alternative to missing strdup() in ZDS libraries
+char *mos_strdup(const char *s) {
+    char *d = malloc(strlen(s) + 1);  // Allocate memory
+    if (d != NULL) strcpy(d, s);      // Copy the string
+    return d;
+}
+
+//Alternative to missing strndup() in ZDS libraries
+char *mos_strndup(const char *s, size_t n) {
+    size_t len = mos_strnlen(s, n);
+    char *d = malloc(len + 1);  // Allocate memory for length plus null terminator
+
+    if (d != NULL) {
+        strncpy(d, s, len);  // Copy up to len characters
+        d[len] = '\0';       // Null-terminate the string
+    }
+
+    return d;
 }
 
 // Parse a number from the line edit buffer
@@ -885,44 +915,102 @@ UINT24	mos_CD(char *path) {
 // Returns:
 // - FatFS return code
 // 
-UINT24	mos_DIR(char * path) {
-	FRESULT	fr;
-	DIR	  	dir;
-	static 	FILINFO  fno;
-	int		yr, mo, da, hr, mi;
-	char 	str[12];
-	
-	fr = f_getlabel("", str, 0);
-	if(fr != 0) {
-		return fr;
-	}	
-	printf("Volume: ");
-	if(strlen(str) > 0) {
-		printf("%s", str);
-	}
-	else {
-		printf("<No Volume Label>");
-	}
-	printf("\n\r\n\r");
-	
-	fr = f_opendir(&dir, path);
-	if(fr == FR_OK) {
-		for(;;) {
-			fr = f_readdir(&dir, &fno);
-			if (fr != FR_OK || fno.fname[0] == 0) {
-				break;  // Break on error or end of dir
-			}
-			yr = (fno.fdate & 0xFE00) >>  9;	// Bits 15 to  9, from 1980
-			mo = (fno.fdate & 0x01E0) >>  5;	// Bits  8 to  5
-			da = (fno.fdate & 0x001F);			// Bits  4 to  0
-			hr = (fno.ftime & 0xF800) >> 11;	// Bits 15 to 11
-			mi = (fno.ftime & 0x07E0) >>  5;	// Bits 10 to  5
-			
-			printf("%04d/%02d/%02d\t%02d:%02d %c %*lu %s\n\r", yr + 1980, mo, da, hr, mi, fno.fattrib & AM_DIR ? 'D' : ' ', 8, fno.fsize, fno.fname);
+UINT24 mos_DIR(char * inputPath) {
+    FRESULT fr;
+    DIR dir;
+    static FILINFO fno;
+    //char dirPath[256], pattern[32] = {0};
+	char *dirPath = NULL, *pattern = NULL;
+    BOOL usePattern = FALSE;
+    char str[12]; // Buffer for volume label
+    int yr, mo, da, hr, mi;
+
+    fr = f_getlabel("", str, 0);
+    if (fr != 0) {
+        return fr;
+    }
+
+    if (strchr(inputPath, '/') == NULL && strchr(inputPath, '*') != NULL) {
+        dirPath = mos_strdup(".");
+		if (!dirPath) goto cleanup;
+		pattern = mos_strdup(inputPath);
+		if (!pattern) goto cleanup;
+        usePattern = TRUE;
+    } else if (strcmp(inputPath, ".") == 0) {
+        dirPath = mos_strdup(".");
+		if (!dirPath) goto cleanup;
+	} else if (inputPath[0] == '/' && strchr(inputPath + 1, '/') == NULL) {
+		dirPath = mos_strdup("/");
+		if (strchr(inputPath + 1, '*') != NULL) {
+			pattern = mos_strdup(inputPath + 1);
+			if (!pattern) goto cleanup;
+			usePattern = TRUE;		
 		}
-	}
-	f_closedir(&dir);
-	return fr;
+    } else {
+        char *lastSeparator = strrchr(inputPath, '/');
+        if (lastSeparator != NULL && *(lastSeparator + 1) != '\0') {
+			dirPath = mos_strndup(inputPath, lastSeparator - inputPath + 1);
+			if (!dirPath) goto cleanup;
+            dirPath[lastSeparator - inputPath + 1] = '\0';
+            pattern = mos_strdup(lastSeparator + 1);
+			if (!pattern) goto cleanup;
+            usePattern = TRUE;
+        } else {
+			dirPath = mos_strdup(inputPath);
+			if (!dirPath) goto cleanup;
+        }
+    }
+	
+    fr = f_opendir(&dir, dirPath);
+	
+    if (fr == FR_OK) {
+		
+    printf("Volume: ");
+    if (strlen(str) > 0) {
+        printf("%s", str);
+    } else {
+        printf("<No Volume Label>");
+    }
+    printf("\n\r");		
+		
+	if (strcmp(dirPath, ".") == 0) {
+		f_getcwd(cwd, sizeof(cwd));
+		printf("Directory: %s\r\n\r\n", cwd);
+	} else printf("Directory: %s\r\n\r\n", dirPath);
+		
+        if (usePattern) {
+            fr = f_findfirst(&dir, &fno, dirPath, pattern);
+        } else {
+            fr = f_readdir(&dir, &fno);
+        }
+
+        while (fr == FR_OK && fno.fname[0]) {
+
+            yr = (fno.fdate & 0xFE00) >> 9;  // Bits 15 to  9, from 1980
+            mo = (fno.fdate & 0x01E0) >> 5;  // Bits  8 to  5
+            da = (fno.fdate & 0x001F);       // Bits  4 to  0
+            hr = (fno.ftime & 0xF800) >> 11; // Bits 15 to 11
+            mi = (fno.ftime & 0x07E0) >> 5;  // Bits 10 to  5
+
+            printf("%04d/%02d/%02d\t%02d:%02d %c %*lu %s\n\r", yr + 1980, mo, da, hr, mi, fno.fattrib & AM_DIR ? 'D' : ' ', 8, fno.fsize, fno.fname);
+
+            if (usePattern) {
+                fr = f_findnext(&dir, &fno);
+            } else {
+                fr = f_readdir(&dir, &fno);
+            }
+
+            if (!usePattern && fno.fname[0] == 0) break;
+        }
+		
+		printf("\r\n");
+    }
+
+	cleanup:
+		if (pattern) free(pattern);
+		if (dirPath) free(dirPath);
+		f_closedir(&dir);
+		return fr;
 }
 
 // Delete file
@@ -932,10 +1020,79 @@ UINT24	mos_DIR(char * path) {
 // - FatFS return code
 // 
 UINT24 mos_DEL(char * filename) {
-	FRESULT	fr;	
-	
-	fr = f_unlink(filename);
-	return fr;
+    FRESULT fr = FR_INT_ERR;
+    DIR dir;
+    static FILINFO fno;
+    char *dirPath = NULL;
+    char *pattern = NULL;
+    BOOL usePattern = FALSE;
+
+    char *lastSeparator = strrchr(filename, '/');
+
+    if (strchr(filename, '*') != NULL) {
+        usePattern = TRUE;
+        if (filename[0] == '/' && strchr(filename + 1, '/') == NULL) {
+			dirPath = mos_strdup("/");
+			if (strchr(filename + 1, '*') != NULL) {
+				pattern = mos_strdup(filename + 1);
+				if (!pattern) goto cleanup;
+			}
+		
+		} else if (lastSeparator != NULL) {
+            dirPath = mos_strndup(filename, lastSeparator - filename);
+            if (!dirPath) return FR_INT_ERR;
+
+            pattern = mos_strdup(lastSeparator + 1);
+            if (!pattern) {
+                free(dirPath);
+                return FR_INT_ERR;
+            }
+        } else {
+            dirPath = mos_strdup(".");
+            pattern = mos_strdup(filename);
+            if (!dirPath || !pattern) {
+                free(dirPath);
+                free(pattern);
+                return FR_INT_ERR;
+            }
+        }
+    } else {
+        dirPath = mos_strdup(filename);
+        if (!dirPath) return FR_INT_ERR;
+    }	
+
+    if (usePattern) {
+        fr = f_opendir(&dir, dirPath);
+        if (fr != FR_OK) goto cleanup;
+
+        fr = f_findfirst(&dir, &fno, dirPath, pattern);
+        while (fr == FR_OK && fno.fname[0] != '\0') {
+            size_t fullPathLen = strlen(dirPath) + strlen(fno.fname) + 2;
+            char *fullPath = malloc(fullPathLen);
+            if (!fullPath) {
+                fr = FR_INT_ERR;
+                break;
+            }
+
+            sprintf(fullPath, "%s/%s", dirPath, fno.fname);  // Construct full path
+            printf("Deleting %s\r\n", fullPath);
+			fr = f_unlink(fullPath);
+            free(fullPath);
+
+            if (fr != FR_OK) break;
+            fr = f_findnext(&dir, &fno);
+        }
+
+        f_closedir(&dir);
+		printf("\r\n");
+    } else {
+        fr = f_unlink(filename);
+    }
+
+	cleanup:
+		free(dirPath);
+		free(pattern);
+		return fr;
 }
 
 // Rename file
@@ -945,11 +1102,95 @@ UINT24 mos_DEL(char * filename) {
 // Returns:
 // - FatFS return code
 // 
-UINT24 mos_REN(char * filename1, char * filename2) {
-	FRESULT fr;
-	
-	fr = f_rename(filename1, filename2);
-	return fr;
+UINT24 mos_REN(char *srcPath, char *dstPath) {
+    FRESULT fr;
+    DIR dir;
+    static FILINFO fno;
+    char *srcDir = NULL, *pattern = NULL, *fullSrcPath = NULL, *fullDstPath = NULL, *srcFilename = NULL;
+	char *asteriskPos, *lastSeparator;
+    BOOL usePattern = FALSE;
+
+    if (strchr(dstPath, '*') != NULL) {
+        printf("Wildcards permitted in source only.\r\n");
+        return FR_INVALID_PARAMETER;
+    }
+
+    asteriskPos = strchr(srcPath, '*');
+    lastSeparator = asteriskPos ? strrchr(srcPath, '/') : NULL;
+
+    if (asteriskPos != NULL) {
+        if (lastSeparator != NULL) {
+            srcDir = mos_strndup(srcPath, lastSeparator - srcPath + 1); // Include '/'
+            pattern = mos_strdup(asteriskPos);
+        } else {
+            srcDir = mos_strdup(""); // Empty string for later use as a destination path
+            pattern = mos_strdup(srcPath);
+        }
+        if (!srcDir || !pattern) {
+            fr = FR_INT_ERR; // Out of memory
+            goto cleanup;
+        }
+        usePattern = TRUE;
+    } else {
+        srcDir = mos_strdup(srcPath);
+        if (!srcDir) return FR_INT_ERR; // Out of memory
+        usePattern = FALSE;
+    }
+
+    if (usePattern) {
+        fr = f_opendir(&dir, srcDir);
+        if (fr != FR_OK) goto cleanup;
+
+        fr = f_findfirst(&dir, &fno, srcDir, pattern);
+        while (fr == FR_OK && fno.fname[0] != '\0') {
+            size_t srcPathLen = strlen(srcDir) + strlen(fno.fname) + 1;
+            size_t dstPathLen = strlen(dstPath) + strlen(fno.fname) + 2; // +2 for '/' and null terminator
+			fullSrcPath = malloc(srcPathLen);
+            fullDstPath = malloc(dstPathLen);
+
+            if (!fullSrcPath || !fullDstPath) {
+                fr = FR_INT_ERR; // Out of memory
+                free(fullSrcPath);
+                free(fullDstPath);
+                break;
+            }
+
+            sprintf(fullSrcPath, "%s%s", srcDir, fno.fname);
+            sprintf(fullDstPath, "%s%s%s", dstPath, (dstPath[strlen(dstPath) - 1] == '/' ? "" : "/"), fno.fname);
+
+            printf("Moving %s to %s\r\n", fullSrcPath, fullDstPath);
+			fr = f_rename(fullSrcPath, fullDstPath);
+            free(fullSrcPath);
+            free(fullDstPath);
+            fullSrcPath = NULL;
+            fullDstPath = NULL;
+
+            if (fr != FR_OK) break;
+            fr = f_findnext(&dir, &fno);
+        }
+
+        f_closedir(&dir);
+		
+    } else {
+		
+        size_t fullDstPathLen = strlen(dstPath) + strlen(srcPath) + 2; // +2 for potential '/' and null terminator
+        fullDstPath = malloc(fullDstPathLen);
+        if (!fullDstPath) return FR_INT_ERR;
+
+        srcFilename = strrchr(srcPath, '/');
+        srcFilename = (srcFilename != NULL) ? srcFilename + 1 : srcPath;
+        sprintf(fullDstPath, "%s%s%s", dstPath, (dstPath[strlen(dstPath) - 1] == '/' ? "" : "/"), srcFilename);
+
+        fr = f_rename(srcPath, fullDstPath);
+		
+        free(fullDstPath);
+    }
+	printf("\r\n");
+
+cleanup:
+    free(srcDir);
+    free(pattern);
+    return fr;
 }
 
 // Copy file
@@ -959,36 +1200,131 @@ UINT24 mos_REN(char * filename1, char * filename2) {
 // Returns:
 // - FatFS return code
 // 
-UINT24 mos_COPY(char * filename1, char * filename2) {
-	FRESULT fr;
-	FIL		fsrc, fdst;
-	BYTE	buffer[1024];
-	UINT	br, bw;
+UINT24 mos_COPY(char *srcPath, char *dstPath) {
+    FRESULT fr;
+    FIL fsrc, fdst;
+    DIR dir;
+    static FILINFO fno;
+    BYTE buffer[1024];
+    UINT br, bw;
+    char *srcDir = NULL, *pattern = NULL, *fullSrcPath = NULL, *fullDstPath = NULL, *srcFilename = NULL;
+	char *asteriskPos, *lastSeparator;
+    BOOL usePattern = FALSE;
 
-	// Open the file to copy
-	//
-	fr = f_open(&fsrc, filename1, FA_READ);
-	if(fr) {
-		return fr;
-	}
-	// Open the destination file
-	//
-	fr = f_open(&fdst, filename2, FA_WRITE | FA_CREATE_NEW);
-	if(fr) {
-		return fr;
-	}
-	// Copy the file
-	//
-	while(1) {
-        fr = f_read(&fsrc, buffer, sizeof buffer, &br);	// Read a chunk of data from the source file
-        if (br == 0) break;								// Error or EOF
-        fr = f_write(&fdst, buffer, br, &bw);			// Write it to the destination file
-        if (bw < br) break; 							// Error or Disk Full
-	}
-    f_close(&fsrc);										// Close both files
-    f_close(&fdst);
+    if (strchr(dstPath, '*') != NULL) {
+        return FR_INVALID_PARAMETER; // Wildcards not allowed in destination path
+    }
 
-	return fr;
+    asteriskPos = strchr(srcPath, '*');
+    lastSeparator = asteriskPos ? strrchr(srcPath, '/') : NULL;
+
+    if (asteriskPos != NULL) {
+        usePattern = TRUE;
+        if (lastSeparator != NULL) {
+            srcDir = mos_strndup(srcPath, lastSeparator - srcPath + 1); // Include '/'
+            pattern = mos_strdup(asteriskPos);
+        } else {
+            srcDir = mos_strdup("");
+            pattern = mos_strdup(srcPath);
+        }
+        if (!srcDir || !pattern) {
+            fr = FR_INT_ERR;
+            goto cleanup;
+        }
+    } else {
+        srcDir = mos_strdup(srcPath);
+        if (!srcDir) return FR_INT_ERR;
+    }
+
+    if (usePattern) {
+        fr = f_opendir(&dir, srcDir);
+        if (fr != FR_OK) goto cleanup;
+
+        fr = f_findfirst(&dir, &fno, srcDir, pattern);
+        while (fr == FR_OK && fno.fname[0] != '\0') {
+            size_t srcPathLen = strlen(srcDir) + strlen(fno.fname) + 1;
+            size_t dstPathLen = strlen(dstPath) + strlen(fno.fname) + 2; // +2 for '/' and null terminator
+            fullSrcPath = malloc(srcPathLen);
+            fullDstPath = malloc(dstPathLen);
+
+            if (!fullSrcPath || !fullDstPath) {
+                fr = FR_INT_ERR;
+                goto file_cleanup;
+            }
+
+            sprintf(fullSrcPath, "%s%s", srcDir, fno.fname);
+            sprintf(fullDstPath, "%s%s%s", dstPath, (dstPath[strlen(dstPath) - 1] == '/' ? "" : "/"), fno.fname);
+
+            fr = f_open(&fsrc, fullSrcPath, FA_READ);
+            if (fr != FR_OK) goto file_cleanup;
+            fr = f_open(&fdst, fullDstPath, FA_WRITE | FA_CREATE_NEW);
+            if (fr != FR_OK) {
+                f_close(&fsrc);
+                goto file_cleanup;
+            }
+
+			printf("Copying %s to %s\r\n", fullSrcPath, fullDstPath);
+            while (1) {
+                fr = f_read(&fsrc, buffer, sizeof(buffer), &br);
+                if (br == 0 || fr != FR_OK) break;
+                fr = f_write(&fdst, buffer, br, &bw);
+                if (bw < br || fr != FR_OK) break;
+            }
+
+            f_close(&fsrc);
+            f_close(&fdst);
+
+        file_cleanup:
+            free(fullSrcPath);
+            free(fullDstPath);
+            fullSrcPath = NULL;
+            fullDstPath = NULL;
+
+            if (fr != FR_OK) break;
+            fr = f_findnext(&dir, &fno);
+        }
+
+        f_closedir(&dir);
+    } else {
+        size_t fullDstPathLen = strlen(dstPath) + strlen(srcPath) + 2; // +2 for potential '/' and null terminator
+        fullDstPath = malloc(fullDstPathLen);
+        if (!fullDstPath) return FR_INT_ERR;
+        srcFilename = strrchr(srcPath, '/');
+        srcFilename = (srcFilename != NULL) ? srcFilename + 1 : srcPath;
+        sprintf(fullDstPath, "%s%s%s", dstPath, (dstPath[strlen(dstPath) - 1] == '/' ? "" : "/"), srcFilename);
+
+        fr = f_open(&fsrc, srcPath, FA_READ);
+        if (fr != FR_OK) {
+            free(fullDstPath);
+            return fr;
+        }
+        fr = f_open(&fdst, fullDstPath, FA_WRITE | FA_CREATE_NEW);
+        if (fr != FR_OK) {
+            f_close(&fsrc);
+            free(fullDstPath);
+            return fr;
+        }
+
+		printf("Moving %s to %s\r\n", fullSrcPath, fullDstPath);
+        while (1) {
+            fr = f_read(&fsrc, buffer, sizeof(buffer), &br);
+            if (br == 0 || fr != FR_OK) break;
+            fr = f_write(&fdst, buffer, br, &bw);
+            if (bw < br || fr != FR_OK) break;
+        }
+
+        f_close(&fsrc);
+        f_close(&fdst);
+        free(fullDstPath);
+    }
+	printf("\r\n");
+
+cleanup:
+    free(srcDir);
+    free(pattern);
+    free(fullSrcPath);
+    free(fullDstPath);
+    return fr;
 }
 
 
