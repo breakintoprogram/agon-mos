@@ -65,6 +65,8 @@ extern BYTE 	rtc;							// In globals.asm
 static FATFS	fs;					// Handle for the file system
 static char * 	mos_strtok_ptr;		// Pointer for current position in string tokeniser
 
+TCHAR cwd[256];						// Hold current working directory.
+
 extern volatile BYTE history_no;
 
 t_mosFileObject	mosFileObjects[MOS_maxOpenFiles];
@@ -159,7 +161,7 @@ BYTE mos_getkey() {
 //
 UINT24 mos_input(char * buffer, int bufferLength) {
 	INT24 retval;
-	putch(MOS_prompt);
+	printf("%s%c", cwd, MOS_prompt);
 	retval = mos_EDITLINE(buffer, bufferLength, 1);
 	printf("\n\r");
 	return retval;
@@ -536,6 +538,7 @@ int mos_cmdCD(char * ptr) {
 		return 19; // Bad Parameter
 	}
 	fr = f_chdir(path);
+	f_getcwd(cwd, sizeof(cwd)); //Update full path.
 	return fr;
 }
 
@@ -746,6 +749,7 @@ int	mos_cmdMOUNT(char *ptr) {
 	fr = mos_mount();
 	if (fr != FR_OK)
 		mos_error(fr);
+	f_getcwd(cwd, sizeof(cwd)); //Update full path.
 	return 0;
 }
 

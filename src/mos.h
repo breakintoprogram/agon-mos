@@ -112,6 +112,8 @@ void	mos_SETRTC(UINT24 address);
 UINT24	mos_SETINTVECTOR(UINT8 vector, UINT24 address);
 UINT24	mos_GETFIL(UINT8 fh);
 
+extern TCHAR	cwd[256];
+
 UINT8	fat_EOF(FIL * fp);
 
 #define HELP_CAT			"Directory listing of the current directory\r\n"
