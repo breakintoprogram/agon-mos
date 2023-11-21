@@ -430,30 +430,9 @@ int mos_cmdKEY(char *ptr) {
 		
 		printf("Hotkey assignments:\r\n\r\n");
 		
-		if (hotkey_strings[0] != NULL) printf("F1:  %s\r\n", hotkey_strings[0]);
-			else printf("F1:  N/A\r\n");
-		if (hotkey_strings[1] != NULL) printf("F2:  %s\r\n", hotkey_strings[1]);
-			else printf("F2:  N/A\r\n");
-		if (hotkey_strings[2] != NULL) printf("F3:  %s\r\n", hotkey_strings[2]);
-			else printf("F3:  N/A\r\n");
-		if (hotkey_strings[3] != NULL) printf("F4:  %s\r\n", hotkey_strings[3]);
-			else printf("F4:  N/A\r\n");
-		if (hotkey_strings[4] != NULL) printf("F5:  %s\r\n", hotkey_strings[4]);
-			else printf("F5:  N/A\r\n");
-		if (hotkey_strings[5] != NULL) printf("F6:  %s\r\n", hotkey_strings[5]);
-			else printf("F6:  N/A\r\n");
-		if (hotkey_strings[6] != NULL) printf("F7:  %s\r\n", hotkey_strings[6]);
-			else printf("F7:  N/A\r\n");
-		if (hotkey_strings[7] != NULL) printf("F8:  %s\r\n", hotkey_strings[7]);
-			else printf("F8:  N/A\r\n");
-		if (hotkey_strings[8] != NULL) printf("F9:  %s\r\n", hotkey_strings[8]);
-			else printf("F9:  N/A\r\n");
-		if (hotkey_strings[9] != NULL) printf("F10: %s\r\n", hotkey_strings[9]);
-			else printf("F10: N/A\r\n");
-		if (hotkey_strings[10] != NULL) printf("F11: %s\r\n", hotkey_strings[10]);
-			else printf("F11: N/A\r\n");
-		if (hotkey_strings[11] != NULL) printf("F12: %s\r\n", hotkey_strings[11]);
-			else printf("F12: N/A\r\n");
+		for (int key = 0; key < 12; key++) {
+				printf("F%d: %s\r\n", key+1, hotkey_strings[key] == NULL ? "N/A" : hotkey_strings[key]);
+		}
 				
 		printf("\r\n");
 		return 0;
