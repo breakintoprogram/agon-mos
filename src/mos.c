@@ -660,9 +660,8 @@ int mos_cmdVDU(char *ptr) {
         // Check for '0x' or '0X' prefix
         if (len > 2 && (value_str[0] == '0' && tolower(value_str[1] == 'x'))) {
             base = 16;
-            value_str += 2;
-            len -= 2;
         }
+		
         // Check for '&' prefix
         if (value_str[0] == '&') {
             base = 16;
