@@ -62,6 +62,8 @@ extern volatile	BYTE keyascii;					// In globals.asm
 extern volatile	BYTE vpd_protocol_flags;		// In globals.asm
 extern BYTE 	rtc;							// In globals.asm
 
+char	cmd_shadow[256];		// Will hold preserved edit line
+
 static FATFS	fs;					// Handle for the file system
 static char * 	mos_strtok_ptr;		// Pointer for current position in string tokeniser
 
@@ -94,6 +96,7 @@ static t_mosCommand mosCommands[] = {
 	{ "CLS",		&mos_cmdCLS,		NULL,				HELP_CLS,		NULL },
 	{ "MOUNT",		&mos_cmdMOUNT,		NULL,				HELP_MOUNT,		NULL },
 	{ "HELP",		&mos_cmdHELP,		HELP_HELP_ARGS,		HELP_HELP,		NULL },
+    { "KEY",		&mos_cmdKEY,		HELP_KEY_ARGS,		HELP_KEY,		NULL },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -337,6 +340,9 @@ int mos_exec(char * buffer) {
 	UINT8	mode;
 
 	ptr = mos_trim(buffer);
+	
+	strcpy (cmd_shadow, ptr);
+	
 	ptr = mos_strtok(ptr, " ");
 	if(ptr != NULL) {
 		func = mos_getCommand(ptr);
@@ -406,6 +412,85 @@ int mos_cmdDIR(char * ptr) {
 		return mos_DIR(".");
 	}
 	return mos_DIR(path);
+}
+
+// KEY command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdKEY(char *ptr) {
+
+	UINT24 fn_number = 0;
+	char *hotkey_string;
+	char *hotkey_string_token;
+
+	if (!mos_parseNumber(NULL, &fn_number)) {
+		
+		printf("Hotkey assignments:\r\n\r\n");
+		
+		if (hotkey_strings[0] != NULL) printf("F1:  %s\r\n", hotkey_strings[0]);
+			else printf("F1:  N/A\r\n");
+		if (hotkey_strings[1] != NULL) printf("F2:  %s\r\n", hotkey_strings[1]);
+			else printf("F2:  N/A\r\n");
+		if (hotkey_strings[2] != NULL) printf("F3:  %s\r\n", hotkey_strings[2]);
+			else printf("F3:  N/A\r\n");
+		if (hotkey_strings[3] != NULL) printf("F4:  %s\r\n", hotkey_strings[3]);
+			else printf("F4:  N/A\r\n");
+		if (hotkey_strings[4] != NULL) printf("F5:  %s\r\n", hotkey_strings[4]);
+			else printf("F5:  N/A\r\n");
+		if (hotkey_strings[5] != NULL) printf("F6:  %s\r\n", hotkey_strings[5]);
+			else printf("F6:  N/A\r\n");
+		if (hotkey_strings[6] != NULL) printf("F7:  %s\r\n", hotkey_strings[6]);
+			else printf("F7:  N/A\r\n");
+		if (hotkey_strings[7] != NULL) printf("F8:  %s\r\n", hotkey_strings[7]);
+			else printf("F8:  N/A\r\n");
+		if (hotkey_strings[8] != NULL) printf("F9:  %s\r\n", hotkey_strings[8]);
+			else printf("F9:  N/A\r\n");
+		if (hotkey_strings[9] != NULL) printf("F10: %s\r\n", hotkey_strings[9]);
+			else printf("F10: N/A\r\n");
+		if (hotkey_strings[10] != NULL) printf("F11: %s\r\n", hotkey_strings[10]);
+			else printf("F11: N/A\r\n");
+		if (hotkey_strings[11] != NULL) printf("F12: %s\r\n", hotkey_strings[11]);
+			else printf("F12: N/A\r\n");
+				
+		printf("\r\n");
+		return 0;
+			
+	}
+
+	if (fn_number < 1 || fn_number > 12) {
+		printf("Invalid FN-key number.\r\n");
+		return 0;
+	}
+
+	if (!mos_parseString(NULL, &hotkey_string)) {
+
+		if (hotkey_strings[fn_number - 1] != NULL) {
+			free(hotkey_strings[fn_number - 1]);
+			hotkey_strings[fn_number - 1] = NULL;
+			printf("F%u cleared.\r\n", fn_number);
+		} else printf("No string hotkey provided.\r\n");
+
+		return 0;
+
+	}
+
+	//"key x " = 6 chars
+	//"key xx " = 7 chars
+
+	if (fn_number < 10)	{
+		hotkey_strings[fn_number - 1] = malloc((strlen(cmd_shadow) - strlen("key x ") + 1) * sizeof(char));
+		strncpy(hotkey_strings[fn_number - 1], cmd_shadow + strlen("key x "), strlen(cmd_shadow) - strlen("key x "));
+		hotkey_strings[fn_number - 1][strlen(cmd_shadow) - strlen("key x ")] = '\0';
+	} else {
+		hotkey_strings[fn_number - 1] = malloc((strlen(cmd_shadow) - strlen("key xx ") + 1) * sizeof(char));
+		strncpy(hotkey_strings[fn_number - 1], cmd_shadow + strlen("key xx "), strlen(cmd_shadow) - strlen("key xx "));
+		hotkey_strings[fn_number - 1][strlen(cmd_shadow) - strlen("key xx ")] = '\0';
+	}
+
+	return 0;
 }
 
 // LOAD <filename> <addr> command
