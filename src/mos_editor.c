@@ -338,7 +338,28 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 								const char *lastSpace = strrchr(buffer, ' ');
 								const char *lastSlash = strrchr(buffer, '/');
 								
-
+								if (lastSlash == NULL && lastSpace == NULL) { //Try commands first before fatfs completion
+									
+									search_term = (char*) malloc(strlen(buffer) + 6);
+									strcpy(search_term, buffer);
+									strcat(search_term, "*.bin");
+									
+									fr = f_findfirst(&dj, &fno, "/mos/", search_term);
+									
+									if (fr == FR_OK && fno.fname[0]) {
+										
+										printf("%.*s ", strlen(fno.fname) - 4 - strlen(buffer), fno.fname + strlen(buffer));
+										strncat(buffer, fno.fname + strlen(buffer), strlen(fno.fname) - 4 - strlen(buffer));
+										strcat(buffer, " ");
+										len = strlen(buffer);
+										insertPos = strlen(buffer);										
+										free(search_term);
+										break;
+										
+									}
+									
+								}
+								
 								if (lastSlash != NULL) {
 									int pathLength = 1;
 																		
