@@ -171,16 +171,17 @@ UINT24 mos_input(char * buffer, int bufferLength) {
 // Returns:
 // - Function pointer, or 0 if command not found
 //
-void * mos_getCommand(char * ptr) {
+t_mosCommand *mos_getCommand(char * ptr) {
 	int	   i;
 	t_mosCommand * cmd;	
 	for(i = 0; i < mosCommands_count; i++) {
 		cmd = &mosCommands[i];
 		if(mos_cmp(cmd->name, ptr) == 0) {
-			return cmd->func;
+			//return cmd->func;
+			return cmd;
 		}
 	}
-	return 0;
+	return NULL;
 }
 
 // Case insensitive commpare with abbreviations
@@ -335,12 +336,14 @@ int mos_exec(char * buffer) {
 	int 	(*func)(char * ptr);
 	char	path[256];
 	UINT8	mode;
+	t_mosCommand *cmd;
 
 	ptr = mos_trim(buffer);
 	ptr = mos_strtok(ptr, " ");
 	if(ptr != NULL) {
-		func = mos_getCommand(ptr);
-		if(func != 0) {
+		cmd = mos_getCommand(ptr);
+		func = cmd->func;
+		if(cmd != NULL && func != 0) {
 			fr = func(ptr);
 		}
 		else {		

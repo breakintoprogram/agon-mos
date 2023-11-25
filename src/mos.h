@@ -53,7 +53,7 @@ void 	mos_error(int error);
 
 BYTE	mos_getkey(void);
 UINT24	mos_input(char * buffer, int bufferLength);
-void *	mos_getCommand(char * ptr);
+t_mosCommand	*mos_getCommand(char * ptr);
 BOOL 	mos_cmp(char *p1, char *p2);
 char *	mos_trim(char * s);
 char *	mos_strtok(char *s1, char * s2);

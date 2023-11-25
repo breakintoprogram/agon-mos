@@ -334,6 +334,7 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 								FRESULT fr;
 								DIR dj;
 								FILINFO fno;
+								t_mosCommand *cmd;
 								const char *searchTermStart;
 								const char *lastSpace = strrchr(buffer, ' ');
 								const char *lastSlash = strrchr(buffer, '/');
@@ -341,12 +342,27 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 								if (lastSlash == NULL && lastSpace == NULL) { //Try commands first before fatfs completion
 									
 									search_term = (char*) malloc(strlen(buffer) + 6);
+									
+									strcpy(search_term, buffer);
+									strcat(search_term, ".");
+									
+									cmd = mos_getCommand(search_term);
+									if (cmd != NULL) { //First try internal MOS commands
+										
+										printf("%s ", cmd->name + strlen(buffer));
+										strcat(buffer, cmd->name + strlen(buffer));
+										strcat(buffer, " ");
+										len = strlen(buffer);
+										insertPos = strlen(buffer);										
+										free(search_term);										
+										break;
+										
+									}
+									
 									strcpy(search_term, buffer);
 									strcat(search_term, "*.bin");
-									
 									fr = f_findfirst(&dj, &fno, "/mos/", search_term);
-									
-									if (fr == FR_OK && fno.fname[0]) {
+									if (fr == FR_OK && fno.fname[0]) { //Now try MOSlets
 										
 										printf("%.*s ", strlen(fno.fname) - 4 - strlen(buffer), fno.fname + strlen(buffer));
 										strncat(buffer, fno.fname + strlen(buffer), strlen(fno.fname) - 4 - strlen(buffer));
