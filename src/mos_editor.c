@@ -380,7 +380,6 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 									int pathLength = 1;
 																		
 									if (lastSpace != NULL && lastSlash > lastSpace) {
-										lastSpace++;
 										pathLength = lastSlash - lastSpace; // Path starts after the last space and includes the slash
 									}
 									if (lastSpace == NULL) {
@@ -393,7 +392,7 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 									if (path == NULL) {
 										break;
 									}
-									strncpy(path, lastSpace, pathLength); // Start after the last space
+									strncpy(path, lastSpace + 1, pathLength); // Start after the last space
 									path[pathLength] = '\0'; // Null-terminate the string
 
 									// Determine the start of the search term
