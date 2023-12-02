@@ -94,6 +94,7 @@ static t_mosCommand mosCommands[] = {
 	{ "CLS",		&mos_cmdCLS,		NULL,				HELP_CLS,		NULL },
 	{ "MOUNT",		&mos_cmdMOUNT,		NULL,				HELP_MOUNT,		NULL },
 	{ "HELP",		&mos_cmdHELP,		HELP_HELP_ARGS,		HELP_HELP,		NULL },
+    { "KEY",		&mos_cmdKEY,		HELP_KEY_ARGS,		HELP_KEY,		NULL },
 };
 
 #define mosCommands_count (sizeof(mosCommands)/sizeof(t_mosCommand))
@@ -336,7 +337,7 @@ int mos_exec(char * buffer) {
 	char	path[256];
 	UINT8	mode;
 
-	ptr = mos_trim(buffer);
+	ptr = mos_trim(buffer);	
 	ptr = mos_strtok(ptr, " ");
 	if(ptr != NULL) {
 		func = mos_getCommand(ptr);
@@ -406,6 +407,67 @@ int mos_cmdDIR(char * ptr) {
 		return mos_DIR(".");
 	}
 	return mos_DIR(path);
+}
+
+// KEY command
+// Parameters:
+// - ptr: Pointer to the argument string in the line edit buffer
+// Returns:
+// - MOS error code
+//
+int mos_cmdKEY(char *ptr) {
+
+	UINT24 fn_number = 0;
+	char *hotkey_string;
+
+	if (!mos_parseNumber(NULL, &fn_number)) {
+		
+		UINT8 key;
+		printf("Hotkey assignments:\r\n\r\n");
+		
+		for (key = 0; key < 12; key++) {
+				printf("F%d: %s\r\n", key+1, hotkey_strings[key] == NULL ? "N/A" : hotkey_strings[key]);
+		}
+				
+		printf("\r\n");
+		return 0;
+			
+	}
+
+	if (fn_number < 1 || fn_number > 12) {
+		printf("Invalid FN-key number.\r\n");
+		return 0;
+	}
+
+	if (strlen(mos_strtok_ptr) < 1) {
+		
+		if (hotkey_strings[fn_number - 1] != NULL) {
+			free(hotkey_strings[fn_number - 1]);
+			hotkey_strings[fn_number - 1] = NULL;
+			printf("F%u cleared.\r\n", fn_number);
+		} else printf("F%u already clear, no hotkey command provided.\r\n", fn_number);
+		
+		return 0;
+		
+	}
+	
+	
+	if (mos_strtok_ptr[0] == '\"' && mos_strtok_ptr[strlen(mos_strtok_ptr) - 1] == '\"') {
+		
+		mos_strtok_ptr[strlen(mos_strtok_ptr) - 1] = '\0';
+		mos_strtok_ptr++;
+		
+	}
+
+	if (hotkey_strings[fn_number - 1] != NULL) free(hotkey_strings[fn_number - 1]);
+	
+	hotkey_strings[fn_number - 1] = malloc((strlen(mos_strtok_ptr) + 1) * sizeof(char));
+	
+	strncpy(hotkey_strings[fn_number - 1], mos_strtok_ptr, strlen(mos_strtok_ptr));
+	
+	hotkey_strings[fn_number - 1][strlen(mos_strtok_ptr)] = '\0';
+
+	return 0;
 }
 
 // LOAD <filename> <addr> command
