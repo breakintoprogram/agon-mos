@@ -62,8 +62,6 @@ extern volatile	BYTE keyascii;					// In globals.asm
 extern volatile	BYTE vpd_protocol_flags;		// In globals.asm
 extern BYTE 	rtc;							// In globals.asm
 
-char	cmd_shadow[256];		// Will hold preserved edit line
-
 static FATFS	fs;					// Handle for the file system
 static char * 	mos_strtok_ptr;		// Pointer for current position in string tokeniser
 
@@ -339,10 +337,7 @@ int mos_exec(char * buffer) {
 	char	path[256];
 	UINT8	mode;
 
-	ptr = mos_trim(buffer);
-	
-	strcpy (cmd_shadow, ptr);
-	
+	ptr = mos_trim(buffer);	
 	ptr = mos_strtok(ptr, " ");
 	if(ptr != NULL) {
 		func = mos_getCommand(ptr);
@@ -424,7 +419,6 @@ int mos_cmdKEY(char *ptr) {
 
 	UINT24 fn_number = 0;
 	char *hotkey_string;
-	char *hotkey_string_token;
 
 	if (!mos_parseNumber(NULL, &fn_number)) {
 		
@@ -445,30 +439,33 @@ int mos_cmdKEY(char *ptr) {
 		return 0;
 	}
 
-	if (!mos_parseString(NULL, &hotkey_string)) {
-
+	if (strlen(mos_strtok_ptr) < 1) {
+		
 		if (hotkey_strings[fn_number - 1] != NULL) {
 			free(hotkey_strings[fn_number - 1]);
 			hotkey_strings[fn_number - 1] = NULL;
 			printf("F%u cleared.\r\n", fn_number);
-		} else printf("No string hotkey provided.\r\n");
-
+		} else printf("F%u already clear, no hotkey command provided.\r\n", fn_number);
+		
 		return 0;
-
+		
+	}
+	
+	
+	if (mos_strtok_ptr[0] == '\"' && mos_strtok_ptr[strlen(mos_strtok_ptr) - 1] == '\"') {
+		
+		mos_strtok_ptr[strlen(mos_strtok_ptr) - 1] = '\0';
+		mos_strtok_ptr++;
+		
 	}
 
-	//"key x " = 6 chars
-	//"key xx " = 7 chars
-
-	if (fn_number < 10)	{
-		hotkey_strings[fn_number - 1] = malloc((strlen(cmd_shadow) - strlen("key x ") + 1) * sizeof(char));
-		strncpy(hotkey_strings[fn_number - 1], cmd_shadow + strlen("key x "), strlen(cmd_shadow) - strlen("key x "));
-		hotkey_strings[fn_number - 1][strlen(cmd_shadow) - strlen("key x ")] = '\0';
-	} else {
-		hotkey_strings[fn_number - 1] = malloc((strlen(cmd_shadow) - strlen("key xx ") + 1) * sizeof(char));
-		strncpy(hotkey_strings[fn_number - 1], cmd_shadow + strlen("key xx "), strlen(cmd_shadow) - strlen("key xx "));
-		hotkey_strings[fn_number - 1][strlen(cmd_shadow) - strlen("key xx ")] = '\0';
-	}
+	if (hotkey_strings[fn_number - 1] != NULL) free(hotkey_strings[fn_number - 1]);
+	
+	hotkey_strings[fn_number - 1] = malloc((strlen(mos_strtok_ptr) + 1) * sizeof(char));
+	
+	strncpy(hotkey_strings[fn_number - 1], mos_strtok_ptr, strlen(mos_strtok_ptr));
+	
+	hotkey_strings[fn_number - 1][strlen(mos_strtok_ptr)] = '\0';
 
 	return 0;
 }
