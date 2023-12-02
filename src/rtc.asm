@@ -17,8 +17,10 @@
 			
 			XDEF	__init_rtc
 			XDEF	_init_rtc
+			XDEF	_millis_handler
 
 			XREF	_rtc_enable
+			XREF	_millis
 
 ; Initialise the real time clock registers
 ;
@@ -30,3 +32,15 @@ _init_rtc:
 			POP	AF
 			RET
 
+_millis_handler:	
+			DI
+			PUSH	AF
+			IN0		A,(TMR0_CTL)		; Clear the timer interrupt
+			PUSH	BC
+			LD		BC, (_millis)		; Increment the delay timer
+			INC		BC
+			LD		(_millis), BC
+			POP		BC
+			POP		AF
+			EI
+			RETI.L

@@ -51,6 +51,8 @@
 
 extern void *	set_vector(unsigned int vector, void(*handler)(void));
 
+extern volatile	UINT24 millis;
+
 extern void 	vblank_handler(void);
 extern void 	uart0_handler(void);
 extern void 	i2c_handler(void);
@@ -127,6 +129,8 @@ int main(void) {
 	if(coldBoot == 0) {								// If a warm boot detected then
 		putch(12);									// Clear the screen
 	}
+
+	
 	printf("Agon Quark MOS Version %d.%02d", MOS_version, MOS_revision);
 	#if MOS_rc > 0
 		printf(" RC%d", MOS_rc);
@@ -152,6 +156,10 @@ int main(void) {
 
 	// The main loop
 	//
+	
+	millis = 0;
+	init_timer0_interrupt(1, 16, 0x00);
+	
 	while(1) {
 		if(mos_input(&cmd, sizeof(cmd)) == 13) {
 			int err = mos_exec(&cmd);
@@ -160,7 +168,7 @@ int main(void) {
 			}
 		}
 		else {
-			printf("%cEscape\n\r", MOS_prompt);
+			printf("%cEscape %u\n\r", MOS_prompt, millis);
 		}
 	}
 

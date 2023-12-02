@@ -18,6 +18,12 @@
 
 #include "timer.h"
 
+extern void *	set_vector(unsigned int vector, void(*handler)(void));
+
+extern volatile void millis_handler();
+
+void *prev_handler;
+
 // Configure Timer 0
 // Parameters:
 // - interval: Interval in ms
@@ -37,6 +43,31 @@ unsigned short init_timer0(int interval, int clkdiv, unsigned char ctrlbits) {
 		case 256: clkbits = 0x0C; break;
 	}
 	ctl = (ctrlbits | clkbits);
+
+	rr = (unsigned short)((SysClkFreq / 1000) / clkdiv) * interval;
+
+	TMR0_CTL = 0x00;													// Disable the timer and clear all settings	
+	TMR0_RR_L = (unsigned char)(rr);
+	TMR0_RR_H = (unsigned char)(rr >> 8);
+    TMR0_CTL = ctl;
+
+	return rr;
+}
+
+unsigned short init_timer0_interrupt(int interval, int clkdiv, unsigned char ctrlbits) {
+	unsigned short	rr;
+	unsigned char	clkbits = 0;
+	unsigned char	ctl;
+
+	prev_handler = set_vector(PRT0_IVECT, millis_handler);
+	
+	switch(clkdiv) {
+		case  4: clkbits =  0x00; break;
+		case  16: clkbits = 0x04; break;
+		case  64: clkbits = 0x08; break;	
+		case 256: clkbits = 0x0C; break;
+	}
+	ctl = (ctrlbits | clkbits | 0x53);
 
 	rr = (unsigned short)((SysClkFreq / 1000) / clkdiv) * interval;
 

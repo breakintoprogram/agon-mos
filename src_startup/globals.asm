@@ -56,6 +56,7 @@
 			XDEF	_mouseWheel
 			XDEF	_mouseXDelta
 			XDEF	_mouseYDelta
+			XDEF	_millis
 
 			XDEF	_errno
 			XDEF 	_coldBoot
@@ -82,6 +83,7 @@
 			XDEF	_i2c_role
 			XDEF	_i2c_msg_ptr
 			XDEF	_i2c_msg_size
+		
 
 			SEGMENT BSS		; This section is reset to 0 in cstartup.asm
 			
@@ -119,6 +121,7 @@ _mouseButtons:		DS	1		; + 2Dh: Mouse left+right+middle buttons (bits 0-2, 0=up, 
 _mouseWheel:		DS	1		; + 2Eh: Mouse wheel delta
 _mouseXDelta:		DS	2		; + 2Fh: Mouse X delta
 _mouseYDelta:		DS	2		; + 31h: Mouse Y delta
+_millis:			DS	3		; + 33h: Milli counter
 
 _errno:			DS 	3		; extern int _errno
 _coldBoot:		DS	1		; extern char _coldBoot

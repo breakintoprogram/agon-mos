@@ -16,8 +16,11 @@
 
 extern long 	SysClkFreq;
 extern volatile BYTE vpd_protocol_flags;		// In globals.asm
+extern volatile	UINT24 millis;					// In globals.asm
 
+void inc_millis();
 unsigned short  init_timer0(int interval, int clkdiv, unsigned char ctrlbits);
+unsigned short init_timer0_interrupt(int interval, int clkdiv, unsigned char ctrlbits);
 void            enable_timer0(unsigned char enable);
 unsigned short  get_timer0();
 BOOL 			wait_VDP(unsigned char mask);

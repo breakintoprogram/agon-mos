@@ -174,6 +174,7 @@ sysvar_mouseButtons:	EQU	2Dh	; 1: Mouse button state
 sysvar_mouseWheel:	EQU	2Eh	; 1: Mouse wheel delta
 sysvar_mouseXDelta:	EQU	2Fh	; 2: Mouse X delta
 sysvar_mouseYDelta:	EQU	31h	; 2: Mouse Y delta
+sysvar_millis:		EQU	33h	; 3: Millis
 	
 ; Flags for the VPD protocol
 ;
