@@ -126,6 +126,10 @@ int main(void) {
 			gp = 2;									// Flag GP as 2, just in case we need to handle this error later
 		}
 	}	
+
+	millis = 0;
+	init_timer0_interrupt(1, 16, 0x00);	
+	
 	if(coldBoot == 0) {								// If a warm boot detected then
 		putch(12);									// Clear the screen
 	}
@@ -156,10 +160,7 @@ int main(void) {
 
 	// The main loop
 	//
-	
-	millis = 0;
-	init_timer0_interrupt(1, 16, 0x00);
-	
+		
 	while(1) {
 		if(mos_input(&cmd, sizeof(cmd)) == 13) {
 			int err = mos_exec(&cmd);
