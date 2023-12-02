@@ -168,7 +168,7 @@ int main(void) {
 			}
 		}
 		else {
-			printf("%cEscape %u\n\r", MOS_prompt, millis);
+			printf("%cEscape\n\r", MOS_prompt);
 		}
 	}
 
