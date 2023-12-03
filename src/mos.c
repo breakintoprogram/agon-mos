@@ -363,7 +363,26 @@ int mos_exec(char * buffer) {
 							fr = 21;
 							break;
 					}
+					return fr;
 				}
+
+				sprintf(path, "/bin/%s.bin", ptr);
+				fr = mos_LOAD(path, MOS_defaultLoadAddress, 0);
+				if(fr == 0) {
+					mode = mos_execMode((UINT8 *)MOS_defaultLoadAddress);
+					switch(mode) {
+						case 0:		// Z80 mode
+							fr = exec16(MOS_defaultLoadAddress, mos_strtok_ptr);
+							break;
+						case 1: 	// ADL mode
+							fr = exec24(MOS_defaultLoadAddress, mos_strtok_ptr);
+							break;	
+						default:	// Unrecognised header
+							fr = 21;
+							break;
+					}
+					return fr;
+				}				
 				else {
 					if(fr == 4) {
 						fr = 20;
