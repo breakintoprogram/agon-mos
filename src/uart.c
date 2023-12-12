@@ -74,9 +74,9 @@ BYTE open_UART0(UART * pUART) {
 	SETREG(PD_ALT2, pins);
 
 	if(pUART->flowControl == FCTL_HW) {
-		SETREG(PD_DDR, PORTPIN_THREE);								// Set Port D bit 3 (CTS) for input
-		RESETREG(PD_ALT1, PORTPIN_THREE);
-		RESETREG(PD_ALT2, PORTPIN_THREE);
+		SETREG(PD_DDR, PORTPIN_THREE|PORTPIN_TWO);								// Set Port D bit 3 and 2 (CTS,RTS) to alternate function
+		RESETREG(PD_ALT1, PORTPIN_THREE|PORTPIN_TWO);
+		SETREG(PD_ALT2, PORTPIN_THREE|PORTPIN_TWO);
 		serialFlags |= 0x02;
 	}
 
@@ -84,7 +84,7 @@ BYTE open_UART0(UART * pUART) {
 	UART0_BRG_L = (br & 0xFF);										// Load divisor low
 	UART0_BRG_H = (CHAR)(( br & 0xFF00 ) >> 8);						// Load divisor high
 	UART0_LCTL &= (~UART_LCTL_DLAB); 								// Reset DLAB; dont disturb other bits
-	UART0_MCTL = 0x00;												// Bring modem control register to reset value
+	UART0_MCTL = 0x02;												// Multidrop, loopback, DTR disabled, RTS enabled
 	UART0_FCTL = 0x07;												// Enable and clear hardware FIFOs
 	UART0_IER = pUART->interrupts;									// Set interrupts
 	
