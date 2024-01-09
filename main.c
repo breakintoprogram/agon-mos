@@ -82,7 +82,7 @@ int wait_ESP32(UART * pUART, UINT24 baudRate) {
 		putch(23);						// Send a general poll packet
 		putch(0);
 		putch(VDP_gp);
-		putch(1);
+		putch(2);						// 2 = full-duplex-mode, 1 = half-duplex-mode (default)
 		for(i = 0; i < 5; i++) {		// Wait 50ms
 			wait_timer0();
 		}
