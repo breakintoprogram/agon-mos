@@ -329,7 +329,7 @@ BOOL mos_parseString(char * ptr, char ** p_Value) {
 // Returns:
 // - MOS error code
 //
-int mos_exec(char * buffer) {
+int mos_exec(char * buffer, BOOL in_mos) {
 	char * 	ptr;
 	int 	fr = 0;
 	int 	(*func)(char * ptr);
@@ -348,7 +348,7 @@ int mos_exec(char * buffer) {
 				fr = 20;
 			}
 			else {
-				sprintf(path, "/mos/%s.bin", ptr);
+				sprintf(path, "/mos/%s.bin", ptr); //Look for MOSlets
 				fr = mos_LOAD(path, MOS_starLoadAddress, 0);
 				if(fr == 0) {
 					mode = mos_execMode((UINT8 *)MOS_starLoadAddress);
@@ -366,22 +366,44 @@ int mos_exec(char * buffer) {
 					return fr;
 				}
 
-				sprintf(path, "/bin/%s.bin", ptr);
-				fr = mos_LOAD(path, MOS_defaultLoadAddress, 0);
-				if(fr == 0) {
-					mode = mos_execMode((UINT8 *)MOS_defaultLoadAddress);
-					switch(mode) {
-						case 0:		// Z80 mode
-							fr = exec16(MOS_defaultLoadAddress, mos_strtok_ptr);
-							break;
-						case 1: 	// ADL mode
-							fr = exec24(MOS_defaultLoadAddress, mos_strtok_ptr);
-							break;	
-						default:	// Unrecognised header
-							fr = 21;
-							break;
+				if (in_mos) {
+				
+					sprintf(path, "%s.bin", ptr); //Look for local non-MOSlets
+					fr = mos_LOAD(path, MOS_defaultLoadAddress, 0);
+					if(fr == 0) {
+						mode = mos_execMode((UINT8 *)MOS_defaultLoadAddress);
+						switch(mode) {
+							case 0:		// Z80 mode
+								fr = exec16(MOS_defaultLoadAddress, mos_strtok_ptr);
+								break;
+							case 1: 	// ADL mode
+								fr = exec24(MOS_defaultLoadAddress, mos_strtok_ptr);
+								break;	
+							default:	// Unrecognised header
+								fr = 21;
+								break;
+						}
+						return fr;
 					}
-					return fr;
+					
+					sprintf(path, "/bin/%s.bin", ptr); //Finally, look for global non-MOSlets
+					fr = mos_LOAD(path, MOS_defaultLoadAddress, 0);
+					if(fr == 0) {
+						mode = mos_execMode((UINT8 *)MOS_defaultLoadAddress);
+						switch(mode) {
+							case 0:		// Z80 mode
+								fr = exec16(MOS_defaultLoadAddress, mos_strtok_ptr);
+								break;
+							case 1: 	// ADL mode
+								fr = exec24(MOS_defaultLoadAddress, mos_strtok_ptr);
+								break;	
+							default:	// Unrecognised header
+								fr = 21;
+								break;
+						}
+						return fr;
+					}
+					
 				}				
 				else {
 					if(fr == 4) {
@@ -1043,7 +1065,7 @@ UINT24 mos_BOOT(char * filename, char * buffer, UINT24 size) {
 	if(fr == FR_OK) {
 		while(!f_eof(&fil)) {
 			f_gets(buffer, size, &fil);
-			mos_exec(buffer);
+			mos_exec(buffer, TRUE);
 		}
 	}
 	f_close(&fil);	
@@ -1229,7 +1251,7 @@ void mos_GETERROR(UINT8 errno, UINT24 address, UINT24 size) {
 //
 UINT24 mos_OSCLI(char * cmd) {
 	UINT24 fr;
-	fr = mos_exec(cmd);
+	fr = mos_exec(cmd, FALSE);
 	return fr;
 }
 
