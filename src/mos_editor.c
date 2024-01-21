@@ -372,10 +372,11 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 										free(search_term);
 										break;
 										
-									} else { //Otherwise try /bin/
-										
-										fr = f_findfirst(&dj, &fno, "/bin/", search_term);
-										if (!(fr == FR_OK && fno.fname[0])) break;
+									}
+									
+									//Try local .bin
+									fr = f_findfirst(&dj, &fno, "", search_term);
+									if ((fr == FR_OK && fno.fname[0])) {
 										printf("%.*s ", strlen(fno.fname) - 4 - strlen(buffer), fno.fname + strlen(buffer));
 										strncat(buffer, fno.fname + strlen(buffer), strlen(fno.fname) - 4 - strlen(buffer));
 										strcat(buffer, " ");
@@ -383,8 +384,20 @@ UINT24 mos_EDITLINE(char * buffer, int bufferLength, UINT8 clear) {
 										insertPos = strlen(buffer);										
 										free(search_term);
 										break;									
-										
+									}									
+									
+									//Otherwise try /bin/
+									fr = f_findfirst(&dj, &fno, "/bin/", search_term);
+									if ((fr == FR_OK && fno.fname[0])) {
+										printf("%.*s ", strlen(fno.fname) - 4 - strlen(buffer), fno.fname + strlen(buffer));
+										strncat(buffer, fno.fname + strlen(buffer), strlen(fno.fname) - 4 - strlen(buffer));
+										strcat(buffer, " ");
+										len = strlen(buffer);
+										insertPos = strlen(buffer);										
+										free(search_term);
+										break;									
 									}
+									
 									
 								}
 								
